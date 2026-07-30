@@ -1,0 +1,28 @@
+/*
+ * RankSage Connect — admin styles.
+ * Bundled locally on purpose: wordpress.org guideline 8 forbids loading admin
+ * assets from a CDN. No fonts, no images, no external references.
+ */
+
+.ranksage-connect-wrap .ranksage-card {
+	max-width: 42rem;
+	padding: 1rem 1.25rem;
+}
+
+.ranksage-connect-wrap .ranksage-status {
+	max-width: 60rem;
+	margin: 1rem 0;
+}
+
+.ranksage-connect-wrap .ranksage-status th {
+	width: 16rem;
+}
+
+.ranksage-connect-wrap .ranksage-status td.description {
+	color: #646970;
+	font-size: 12px;
+}
+
+.ranksage-connect-wrap ol {
+	max-width: 60rem;
+}
