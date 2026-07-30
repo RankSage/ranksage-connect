@@ -134,9 +134,22 @@ class RankSage_Connect_Capture {
 			return;
 		}
 
+		/**
+		 * WHAT: Ask for an immediate drain once the buffer crosses its threshold.
+		 * HOW:  The cheap cron lookup runs FIRST so the COUNT(*) is skipped entirely
+		 *       whenever a drain is already queued.
+		 * WHY:  This valve was dead before: it tested RANKSAGE_CONNECT_FLUSH_HOOK, which
+		 *       always has a next occurrence because ensure_scheduled() keeps a recurring
+		 *       event on it. It now tests the dedicated one-off hook, so it actually fires.
+		 * NOTE: The COUNT(*) runs on `shutdown` and only for requests already identified
+		 *       as AI-crawler hits — never on the human request path.
+		 */
+		if ( wp_next_scheduled( RANKSAGE_CONNECT_FLUSH_NOW_HOOK ) ) {
+			return;
+		}
 		$config = RankSage_Connect_Config::get();
-		if ( self::buffer_depth() >= (int) $config['buffer_threshold'] && ! wp_next_scheduled( RANKSAGE_CONNECT_FLUSH_HOOK ) ) {
-			wp_schedule_single_event( time(), RANKSAGE_CONNECT_FLUSH_HOOK );
+		if ( self::buffer_depth() >= (int) $config['buffer_threshold'] ) {
+			RankSage_Connect_Flusher::request_immediate_flush( 0 );
 		}
 	}
 

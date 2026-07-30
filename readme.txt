@@ -23,9 +23,13 @@ AI crawlers fetch your HTML without running JavaScript. That means no browser-ba
 
 = Honest note about page caches =
 
-If your site uses a full-page cache (WP Rocket, LiteSpeed Cache, W3 Total Cache, WP Super Cache, SiteGround Optimizer, or a host-level cache such as WP Engine, Kinsta or Cloudflare), cached pages are served **without running PHP at all**. No WordPress plugin — this one included — can observe those requests.
+If your site uses a full-page cache, cached pages are served **without running PHP at all**. No WordPress plugin — this one included — can observe those requests.
 
-RankSage Connect detects your cache layer, tells you plainly in the settings screen that your AI-crawler coverage is partial, and gives you the exact exclusion steps for your cache. RankSage also offers a Cloudflare Worker snippet for 100% coverage on Cloudflare-fronted sites. We would rather tell you the truth about coverage than show you a number that quietly undercounts.
+**What this plugin can detect:** cache layers that announce themselves to PHP — WP Rocket, LiteSpeed Cache, W3 Total Cache, WP Super Cache, SiteGround Optimizer, WP Engine, Kinsta, WordPress VIP, and the generic `WP_CACHE` / `advanced-cache.php` signals. When one is found, the settings screen says so and gives you the exact exclusion steps for it.
+
+**What this plugin cannot detect:** an edge or CDN cache in front of your server — Cloudflare, Fastly, a host's own edge tier. There is no reliable way to see those from PHP, because a request served at the edge never reaches your server at all. If you run one, assume your AI-crawler coverage is undercounted by however much the edge absorbs, and use the RankSage Cloudflare Worker snippet — that runs at the edge itself and is the only path to complete coverage.
+
+We would rather tell you where the number is incomplete than show you one that quietly undercounts.
 
 = External service =
 
@@ -39,10 +43,10 @@ This plugin requires an account with **RankSage**, an external SaaS product oper
 
 * **Only after you click "Connect to RankSage" and complete sign-in.** Before that, the plugin contacts nothing.
 * **AI-crawler hits (only while the "AI-crawler capture" toggle is on):** the crawler's user-agent string, the requested path (query strings are stripped before storage), and a timestamp. These are buffered locally in your database and sent in a single batched request roughly every five minutes. **No visitor personal data, no IP addresses, no query strings, no post content.** Only requests whose user-agent matches a known AI crawler are ever recorded — ordinary human traffic is never touched by this feature.
-* **Plugin configuration pull:** once a day the plugin requests its configuration (the AI-crawler user-agent list, batch sizes, and a kill switch) from RankSage. This request carries the plugin version and your site URL in the user-agent header, nothing else. The response is verified with a cryptographic signature before it is used, and it can never change which server the plugin talks to.
+* **Plugin configuration pull:** once a day the plugin requests its configuration (the AI-crawler user-agent list, batch sizes, and a kill switch) from RankSage. This request carries the plugin version and your site URL in the user-agent header, plus the site token issued when you connected, so the configuration can be scoped to your site — nothing else. The response is verified with a cryptographic signature before it is used, and it can never change which server the plugin talks to.
 * **Connection handshake:** your site URL, the plugin version and the detected cache layer, once, when you connect.
 
-**What is stored on your site:** your RankSage *public* tracking key (the same key that is visible in your page source), a site token, your two toggle preferences, and the local AI-crawler buffer table. No RankSage secret or API password is ever written to your site.
+**What is stored on your site:** your RankSage *public* tracking key (the same key that is visible in your page source), the site token described above, your two toggle preferences, and the local AI-crawler buffer table. No RankSage secret or API password is ever written to your site.
 
 **What the tracking tag sends** is governed by your RankSage account settings and the RankSage privacy policy linked above.
 
@@ -82,13 +86,11 @@ Deactivating stops all sending and removes the scheduled job. Deleting the plugi
 
 = Why does it say my AI-crawler coverage is degraded? =
 
-Your site uses a full-page cache, which serves pages without running PHP, so the plugin cannot observe those requests. The settings screen lists the exact exclusion steps for your caching plugin.
+Either a full-page cache was detected — it serves pages without running PHP, so the plugin cannot observe those requests, and the settings screen lists the exact exclusion steps for it — or a delivery to RankSage failed, or buffered hits had to be dropped because RankSage stayed unreachable long enough for the local buffer to hit its 5,000-row cap. The settings screen names which one it is.
 
-== Screenshots ==
+= Does the buffer grow forever if RankSage is unreachable? =
 
-1. Settings → RankSage before connecting: nothing is sent until you connect.
-2. Per-capability status, with a page cache detected and the fix spelled out.
-3. Independent toggles for the tracking tag and AI-crawler capture.
+No. The buffer is capped at 5,000 rows, and the cap is applied on every flush attempt, including while the plugin is backing off from a failed delivery. Beyond the cap the oldest hits are dropped, the count of dropped hits is shown in the settings screen, and the delivery error that caused it is shown next to it rather than being overwritten.
 
 == Changelog ==
 

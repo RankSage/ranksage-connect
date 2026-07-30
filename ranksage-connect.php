@@ -12,7 +12,6 @@
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       ranksage-connect
- * Domain Path:       /languages
  *
  * @package RankSage_Connect
  */
@@ -64,8 +63,20 @@ define( 'RANKSAGE_CONNECT_STATE_OPTION', 'ranksage_connect_state' );
  * capture hook reads it on every front-end request — see RankSage_Connect_Config::get().
  */
 define( 'RANKSAGE_CONNECT_CONFIG_OPTION', 'ranksage_connect_remote_config' );
-/** Cron hook that flushes the buffered AI-crawler hits. */
+/** Cron hook that flushes the buffered AI-crawler hits (recurring, every five minutes). */
 define( 'RANKSAGE_CONNECT_FLUSH_HOOK', 'ranksage_connect_flush_bot_hits' );
+/**
+ * WHAT: Separate cron hook for the one-off "drain now" flush.
+ * WHY:  The immediate-flush escape valves used to schedule a single event on
+ *       RANKSAGE_CONNECT_FLUSH_HOOK guarded by `! wp_next_scheduled( … )`. That hook
+ *       always HAS a next occurrence (ensure_scheduled keeps a recurring event on it
+ *       with the same empty args), so the guard was permanently false and the valve was
+ *       dead code. A distinct hook name gives `wp_next_scheduled` something it can
+ *       actually answer "no" to.
+ * NOTE: Registered to the same callback as the recurring hook, and unscheduled by both
+ *       deactivation and uninstall.php.
+ */
+define( 'RANKSAGE_CONNECT_FLUSH_NOW_HOOK', 'ranksage_connect_flush_bot_hits_now' );
 /** Cron hook that refreshes the remote config. */
 define( 'RANKSAGE_CONNECT_CONFIG_HOOK', 'ranksage_connect_refresh_config' );
 
@@ -133,7 +144,7 @@ register_activation_hook( __FILE__, 'ranksage_connect_activate' );
  *       uninstall.php is what removes them.
  */
 function ranksage_connect_deactivate() {
-	foreach ( array( RANKSAGE_CONNECT_FLUSH_HOOK, RANKSAGE_CONNECT_CONFIG_HOOK ) as $hook ) {
+	foreach ( array( RANKSAGE_CONNECT_FLUSH_HOOK, RANKSAGE_CONNECT_FLUSH_NOW_HOOK, RANKSAGE_CONNECT_CONFIG_HOOK ) as $hook ) {
 		$timestamp = wp_next_scheduled( $hook );
 		while ( false !== $timestamp ) {
 			wp_unschedule_event( $timestamp, $hook );

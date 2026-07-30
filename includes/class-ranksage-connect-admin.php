@@ -108,10 +108,10 @@ class RankSage_Connect_Admin {
 				$result = self::exchange_code( $code );
 				self::redirect_with_notice(
 					is_wp_error( $result ) ? 'error' : 'connected',
-					is_wp_error( $result ) ? $result->get_error_message() : ''
+					is_wp_error( $result ) ? self::detail_key_for( $result ) : ''
 				);
 			}
-			self::redirect_with_notice( 'error', __( 'The connection link expired. Please click Connect again.', 'ranksage-connect' ) );
+			self::redirect_with_notice( 'error', 'link_expired' );
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- routed on, then nonce-verified inside each branch via check_admin_referer().
@@ -213,23 +213,53 @@ class RankSage_Connect_Admin {
 	}
 
 	/**
-	 * Redirects back to the settings page carrying a notice key.
+	 * WHAT: Redirects back to the settings page carrying a notice key and a detail KEY.
+	 * HOW:  Both values are opaque slugs looked up in fixed maps at render time — no
+	 *       free text ever travels in the URL.
+	 * WHY:  The detail used to be the raw error message, rendered verbatim (escaped)
+	 *       inside a branded RankSage notice. Escaped prose is not XSS, but an emailed
+	 *       link could still put an attacker's sentence — "RankSage: your billing failed,
+	 *       call this number" — into a notice the admin trusts because we drew it.
 	 *
-	 * @param string $notice  Notice key.
-	 * @param string $message Optional detail.
+	 * @param string $notice     Notice key, resolved against the map in render_notice().
+	 * @param string $detail_key Optional detail key, resolved against DETAIL_MESSAGES.
 	 * @return void
 	 */
-	private static function redirect_with_notice( $notice, $message ) {
+	private static function redirect_with_notice( $notice, $detail_key ) {
 		$url = add_query_arg(
 			array(
-				'page'             => self::PAGE_SLUG,
-				'ranksage_notice'  => rawurlencode( $notice ),
-				'ranksage_message' => rawurlencode( $message ),
+				'page'            => self::PAGE_SLUG,
+				'ranksage_notice' => rawurlencode( $notice ),
+				'ranksage_detail' => rawurlencode( $detail_key ),
 			),
 			admin_url( 'options-general.php' )
 		);
 		wp_safe_redirect( $url );
 		exit;
+	}
+
+	/**
+	 * WHAT: The only detail sentences this plugin will ever render in its own notice.
+	 * WHY:  A closed set means the notice text cannot be authored by whoever crafted the
+	 *       URL — the key selects one of ours, or nothing is shown.
+	 *
+	 * @return array<string,string>
+	 */
+	private static function detail_messages() {
+		return array(
+			'link_expired'               => __( 'The connection link expired. Please click Connect again.', 'ranksage-connect' ),
+			'ranksage_exchange_failed'   => __( 'RankSage could not confirm this connection. Please try again from your RankSage dashboard.', 'ranksage-connect' ),
+			'ranksage_exchange_shape'    => __( 'RankSage returned a response this plugin did not understand.', 'ranksage-connect' ),
+			'ranksage_site_mismatch'     => __( 'That configuration was issued for a different site.', 'ranksage-connect' ),
+			'ranksage_missing_key'       => __( 'RankSage did not return a tracking key.', 'ranksage-connect' ),
+			'ranksage_no_sodium'         => __( 'The PHP sodium extension is unavailable, so the signed configuration cannot be verified.', 'ranksage-connect' ),
+			'ranksage_bad_payload'       => __( 'The RankSage payload was malformed.', 'ranksage-connect' ),
+			'ranksage_bad_signature'     => __( 'The RankSage payload signature was malformed.', 'ranksage-connect' ),
+			'ranksage_signature_failed'  => __( 'The RankSage payload signature did not verify.', 'ranksage-connect' ),
+			'ranksage_bad_json'          => __( 'The RankSage payload was not valid JSON.', 'ranksage-connect' ),
+			'ranksage_stale_payload'     => __( 'The RankSage payload was outside the accepted time window. Check this server\'s clock.', 'ranksage-connect' ),
+			'ranksage_unreachable'       => __( 'RankSage could not be reached from this server.', 'ranksage-connect' ),
+		);
 	}
 
 	/**
@@ -300,7 +330,22 @@ class RankSage_Connect_Admin {
 	}
 
 	/**
-	 * Renders the redirect-carried notice.
+	 * WHAT: Maps a WP_Error onto one of the closed set of detail keys.
+	 * WHY:  Every error this plugin raises itself is in the map; anything else can only
+	 *       have come from wp_remote_* transport failure, which IS "could not reach".
+	 *
+	 * @param WP_Error $error Failure to classify.
+	 * @return string
+	 */
+	private static function detail_key_for( WP_Error $error ) {
+		$code = $error->get_error_code();
+		return isset( self::detail_messages()[ $code ] ) ? $code : 'ranksage_unreachable';
+	}
+
+	/**
+	 * WHAT: Renders the redirect-carried notice.
+	 * NOTE: Both the notice and the detail are KEYS into fixed maps. An unrecognised key
+	 *       renders nothing rather than itself, so no URL-supplied prose can appear.
 	 *
 	 * @return void
 	 */
@@ -312,7 +357,10 @@ class RankSage_Connect_Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
 		$notice = sanitize_key( wp_unslash( $_GET['ranksage_notice'] ) );
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
-		$detail = isset( $_GET['ranksage_message'] ) ? sanitize_text_field( wp_unslash( $_GET['ranksage_message'] ) ) : '';
+		$detail_key = isset( $_GET['ranksage_detail'] ) ? sanitize_key( wp_unslash( $_GET['ranksage_detail'] ) ) : '';
+
+		$details = self::detail_messages();
+		$detail  = isset( $details[ $detail_key ] ) ? $details[ $detail_key ] : '';
 
 		$map = array(
 			'connected'    => array( 'success', __( 'Connected to RankSage.', 'ranksage-connect' ) ),
@@ -409,6 +457,16 @@ class RankSage_Connect_Admin {
 			),
 		);
 
+		// Reported as its own row rather than folded into "Last error", so the delivery
+		// failure that caused the overflow stays visible next to its consequence.
+		if ( '' !== $status['overflowMessage'] ) {
+			$rows[] = array(
+				__( 'Dropped hits', 'ranksage-connect' ),
+				(string) (int) $status['overflowDropped'],
+				$status['overflowMessage'],
+			);
+		}
+
 		echo '<table class="widefat striped ranksage-status"><tbody>';
 		foreach ( $rows as $row ) {
 			echo '<tr><th scope="row">' . esc_html( $row[0] ) . '</th><td>' . esc_html( $row[1] ) . '</td><td class="description">' . esc_html( $row[2] ) . '</td></tr>';
@@ -439,6 +497,9 @@ class RankSage_Connect_Admin {
 		}
 		if ( '' !== $status['lastError'] ) {
 			return __( 'Degraded — last send failed', 'ranksage-connect' );
+		}
+		if ( '' !== $status['overflowMessage'] ) {
+			return __( 'Degraded — buffered hits were dropped', 'ranksage-connect' );
 		}
 		return __( 'Active', 'ranksage-connect' );
 	}

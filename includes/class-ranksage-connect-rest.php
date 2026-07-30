@@ -108,7 +108,8 @@ class RankSage_Connect_Rest {
 		$settings    = RankSage_Connect_Settings::get();
 		$state       = RankSage_Connect_Settings::get_state();
 		$config      = RankSage_Connect_Config::get();
-		$cache_layer = RankSage_Connect_Cache_Detect::summary();
+		$cache_layer      = RankSage_Connect_Cache_Detect::summary();
+		$overflow_message = RankSage_Connect_Flusher::overflow_message();
 
 		return array(
 			'version'          => RANKSAGE_CONNECT_VERSION,
@@ -122,11 +123,16 @@ class RankSage_Connect_Rest {
 			),
 			'cacheLayer'       => $cache_layer,
 			// The one field the RankSage dashboard keys its degraded badge off.
-			'degraded'         => '' !== $cache_layer || '' !== $state['last_error'],
+			'degraded'         => '' !== $cache_layer || '' !== $state['last_error'] || '' !== $overflow_message,
 			'bufferDepth'      => RankSage_Connect_Capture::buffer_depth(),
 			'lastFlush'        => (int) $state['last_flush'],
 			'lastError'        => $state['last_error'],
 			'lastErrorAt'      => (int) $state['last_error_at'],
+			// Reported alongside — never instead of — lastError: an overflow is caused BY
+			// a delivery failure, so collapsing the two would hide the cause.
+			'overflowDropped'  => (int) $state['overflow_dropped'],
+			'overflowAt'       => (int) $state['overflow_at'],
+			'overflowMessage'  => $overflow_message,
 			'retryAfter'       => (int) $state['retry_after'],
 			'sentTotal'        => (int) $state['sent_total'],
 			'configSource'     => $config['source'],

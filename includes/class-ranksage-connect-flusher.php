@@ -31,6 +31,20 @@ class RankSage_Connect_Flusher {
 	const MAX_BACKOFF = 6 * HOUR_IN_SECONDS;
 
 	/**
+	 * WHAT: Hard ceiling on how many rows one POST may carry, regardless of config.
+	 * WHY:  RankSage folds a batch into at most 200 distinct (date, path, bot) groups and
+	 *       still answers 204. Remote config may raise flush_batch_size as far as 500, and
+	 *       the plugin DELETEs the whole batch on any 2xx — so a 500-row batch could delete
+	 *       rows the server silently dropped past its fold cap. Clamping here keeps the
+	 *       plugin inside the contract it can actually verify. Raising this constant
+	 *       requires the server-side cap to move first.
+	 */
+	const MAX_BATCH_SIZE = 200;
+
+	/** How long a buffer overflow keeps the site flagged as degraded. */
+	const OVERFLOW_NOTICE_TTL = 7 * DAY_IN_SECONDS;
+
+	/**
 	 * Registers the schedule, the recurring event and the flush handler.
 	 *
 	 * @return void
@@ -38,7 +52,27 @@ class RankSage_Connect_Flusher {
 	public static function register() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'add_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.ChangeDetected -- a five-minute flush is the documented design; it performs one outbound request.
 		add_action( RANKSAGE_CONNECT_FLUSH_HOOK, array( __CLASS__, 'flush' ) );
+		add_action( RANKSAGE_CONNECT_FLUSH_NOW_HOOK, array( __CLASS__, 'flush' ) );
 		add_action( 'init', array( __CLASS__, 'ensure_scheduled' ), 20 );
+	}
+
+	/**
+	 * WHAT: Asks for a one-off flush on the next cron tick, if one is not already queued.
+	 * HOW:  Schedules a single event on the DEDICATED "flush now" hook, so
+	 *       wp_next_scheduled() answers about this valve only and not about the
+	 *       permanently-scheduled recurring flush.
+	 * WHY:  Both callers (a full batch that means more is waiting, and the buffer
+	 *       threshold in Capture::record) previously tested the recurring hook, which
+	 *       always has a next occurrence — the valve never fired once.
+	 *
+	 * @param int $delay Seconds from now.
+	 * @return void
+	 */
+	public static function request_immediate_flush( $delay = 0 ) {
+		if ( wp_next_scheduled( RANKSAGE_CONNECT_FLUSH_NOW_HOOK ) ) {
+			return;
+		}
+		wp_schedule_single_event( time() + (int) $delay, RANKSAGE_CONNECT_FLUSH_NOW_HOOK );
 	}
 
 	/**
@@ -74,6 +108,16 @@ class RankSage_Connect_Flusher {
 		} elseif ( ! $wanted && $scheduled ) {
 			wp_unschedule_event( $scheduled, RANKSAGE_CONNECT_FLUSH_HOOK );
 		}
+
+		// A pending one-off drain must die with the recurring event, or a disconnected
+		// site would still run one more flush attempt.
+		if ( ! $wanted ) {
+			$pending_now = wp_next_scheduled( RANKSAGE_CONNECT_FLUSH_NOW_HOOK );
+			while ( false !== $pending_now ) {
+				wp_unschedule_event( $pending_now, RANKSAGE_CONNECT_FLUSH_NOW_HOOK );
+				$pending_now = wp_next_scheduled( RANKSAGE_CONNECT_FLUSH_NOW_HOOK );
+			}
+		}
 	}
 
 	/**
@@ -84,21 +128,33 @@ class RankSage_Connect_Flusher {
 	public static function flush() {
 		global $wpdb;
 
+		// The only skip that precedes pruning: when the plugin is disconnected or capture
+		// is off, Capture::maybe_capture() returns on the same condition, so the buffer
+		// cannot grow and there is nothing to cap.
 		$settings = RankSage_Connect_Settings::get();
 		if ( ! $settings['connected'] || ! $settings['capture_enabled'] || '' === $settings['public_key'] ) {
 			return;
 		}
 
-		$state = RankSage_Connect_Settings::get_state();
-		if ( $state['retry_after'] > time() ) {
-			return; // Still backing off from a failed delivery.
-		}
-
 		$config = RankSage_Connect_Config::get();
 		$table  = RankSage_Connect_Capture::table();
-		$limit  = (int) $config['flush_batch_size'];
 
+		/**
+		 * WHAT: The buffer cap is applied on EVERY flush attempt, before the backoff gate.
+		 * WHY:  The gate returns for up to MAX_BACKOFF (6 hours) after repeated delivery
+		 *       failures — precisely the window in which the buffer grows without bound —
+		 *       so pruning behind the gate meant the 5,000-row cap was enforced exactly
+		 *       zero times during an outage, growing the customer's database unchecked.
+		 *       Pruning is local-only (one DELETE), so it is safe to run while backing off.
+		 */
 		self::prune_overflow( (int) $config['buffer_max_rows'] );
+
+		$state = RankSage_Connect_Settings::get_state();
+		if ( $state['retry_after'] > time() ) {
+			return; // Still backing off from a failed delivery — buffer already capped above.
+		}
+
+		$limit = max( 1, min( self::MAX_BATCH_SIZE, (int) $config['flush_batch_size'] ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is derived from $wpdb->prefix; the only variable is bound via prepare().
 		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT id, path, ua, hit_ts FROM ' . $table . ' ORDER BY id ASC LIMIT %d', $limit ) );
@@ -157,8 +213,8 @@ class RankSage_Connect_Flusher {
 		);
 
 		// A full batch means more is waiting; drain promptly rather than at the next tick.
-		if ( count( $hits ) >= $limit && ! wp_next_scheduled( RANKSAGE_CONNECT_FLUSH_HOOK ) ) {
-			wp_schedule_single_event( time() + 30, RANKSAGE_CONNECT_FLUSH_HOOK );
+		if ( count( $hits ) >= $limit ) {
+			self::request_immediate_flush( 30 );
 		}
 	}
 
@@ -190,6 +246,10 @@ class RankSage_Connect_Flusher {
 	 * WHAT: Caps the buffer so a long outage cannot grow the customer's database.
 	 * WHY:  Dropping the OLDEST rows keeps recent crawler activity, which is the data
 	 *       that matters, and the drop is recorded rather than silent.
+	 * NOTE: The overflow is recorded in its OWN state fields, never in `last_error`.
+	 *       Overwriting `last_error` would erase the delivery failure that caused the
+	 *       overflow in the first place — leaving wp-admin and ranksage/v1/status showing
+	 *       the symptom while hiding the cause.
 	 *
 	 * @param int $max_rows Hard ceiling on buffered rows.
 	 * @return void
@@ -212,15 +272,39 @@ class RankSage_Connect_Flusher {
 			$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . $table . ' WHERE id <= %d', $cutoff ) );
 		}
 
+		$state = RankSage_Connect_Settings::get_state();
 		RankSage_Connect_Settings::update_state(
 			array(
-				'last_error'    => sprintf(
-					/* translators: %d: number of dropped buffered hits. */
-					__( 'Buffer overflowed — %d oldest AI-crawler hits were dropped because RankSage could not be reached.', 'ranksage-connect' ),
-					$excess
-				),
-				'last_error_at' => time(),
+				'overflow_dropped' => (int) $state['overflow_dropped'] + $excess,
+				'overflow_at'      => time(),
 			)
+		);
+	}
+
+	/**
+	 * WHAT: The human sentence describing a RECENT buffer overflow, or '' when there is none.
+	 * WHY:  Shared by wp-admin and ranksage/v1/status so both report the same fact, and
+	 *       kept separate from `last_error` so a delivery failure and a buffer overflow
+	 *       are two visible lines rather than one overwriting the other.
+	 * NOTE: Expires after OVERFLOW_NOTICE_TTL. The running total is kept forever, but a
+	 *       drop from three months ago must not pin the site to "degraded" for good —
+	 *       a permanent warning is one nobody reads.
+	 *
+	 * @return string
+	 */
+	public static function overflow_message() {
+		$state = RankSage_Connect_Settings::get_state();
+		if ( (int) $state['overflow_dropped'] <= 0 ) {
+			return '';
+		}
+		if ( (int) $state['overflow_at'] < time() - self::OVERFLOW_NOTICE_TTL ) {
+			return '';
+		}
+
+		return sprintf(
+			/* translators: %d: number of dropped buffered hits. */
+			__( 'Buffer overflowed recently — %d oldest AI-crawler hits have been dropped in total because they could not be delivered to RankSage in time. See the last error below for the cause.', 'ranksage-connect' ),
+			(int) $state['overflow_dropped']
 		);
 	}
 }

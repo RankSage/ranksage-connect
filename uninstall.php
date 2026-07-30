@@ -22,7 +22,10 @@ $ranksage_table = $wpdb->prefix . 'ranksage_bot_hits';
 $wpdb->query( 'DROP TABLE IF EXISTS ' . $ranksage_table );
 
 // Clear any scheduled work left behind.
-foreach ( array( 'ranksage_connect_flush_bot_hits', 'ranksage_connect_refresh_config' ) as $ranksage_hook ) {
+// NOTE: `ranksage_connect_flush_bot_hits_now` is the one-off "drain now" hook — it is a
+// separate hook precisely so `wp_next_scheduled()` can distinguish it from the recurring
+// flush, so it also has to be cleared separately here.
+foreach ( array( 'ranksage_connect_flush_bot_hits', 'ranksage_connect_flush_bot_hits_now', 'ranksage_connect_refresh_config' ) as $ranksage_hook ) {
 	$ranksage_timestamp = wp_next_scheduled( $ranksage_hook );
 	while ( false !== $ranksage_timestamp ) {
 		wp_unschedule_event( $ranksage_timestamp, $ranksage_hook );

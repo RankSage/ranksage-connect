@@ -116,16 +116,22 @@ class RankSage_Connect_Settings {
 	/**
 	 * Returns operational state (never autoloaded — it changes on every flush).
 	 *
-	 * @return array{last_flush:int,last_error:string,last_error_at:int,retry_after:int,failures:int,sent_total:int}
+	 * NOTE: `overflow_dropped` / `overflow_at` are deliberately SEPARATE from
+	 *       `last_error`. Buffer overflow is a consequence of a delivery failure, so
+	 *       recording it in `last_error` would overwrite — and hide — the cause.
+	 *
+	 * @return array{last_flush:int,last_error:string,last_error_at:int,retry_after:int,failures:int,sent_total:int,overflow_dropped:int,overflow_at:int}
 	 */
 	public static function get_state() {
 		$defaults = array(
-			'last_flush'    => 0,
-			'last_error'    => '',
-			'last_error_at' => 0,
-			'retry_after'   => 0,
-			'failures'      => 0,
-			'sent_total'    => 0,
+			'last_flush'       => 0,
+			'last_error'       => '',
+			'last_error_at'    => 0,
+			'retry_after'      => 0,
+			'failures'         => 0,
+			'sent_total'       => 0,
+			'overflow_dropped' => 0,
+			'overflow_at'      => 0,
 		);
 
 		$stored = get_option( RANKSAGE_CONNECT_STATE_OPTION, array() );

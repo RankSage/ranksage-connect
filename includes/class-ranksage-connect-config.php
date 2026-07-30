@@ -228,12 +228,30 @@ class RankSage_Connect_Config {
 	 * @return array|WP_Error
 	 */
 	private static function fetch_remote() {
+		$headers = array( 'Accept' => 'application/json' );
+
+		/**
+		 * WHAT: Identify the site on the config pull with the token issued at connect.
+		 * WHY:  The token was stored and advertised in the readme but read nowhere — dead
+		 *       state on a customer's site, which is exactly what a wordpress.org reviewer
+		 *       flags. Sending it makes the stored value purposeful: it lets RankSage scope
+		 *       the config (including the capture kill switch) to one site rather than
+		 *       serving one global document to every install.
+		 * NOTE: Optional by design. The endpoint stays usable without it, and a missing
+		 *       token simply omits the header — the response is Ed25519-verified either
+		 *       way, so the token is never what establishes trust.
+		 */
+		$site_token = RankSage_Connect_Settings::get()['site_token'];
+		if ( '' !== $site_token ) {
+			$headers['X-Ranksage-Site-Token'] = $site_token;
+		}
+
 		$response = wp_remote_get(
 			RANKSAGE_CONNECT_API_BASE . '/api/v1/wordpress/plugin-config',
 			array(
 				'timeout'    => 10,
 				'user-agent' => self::user_agent(),
-				'headers'    => array( 'Accept' => 'application/json' ),
+				'headers'    => $headers,
 			)
 		);
 
