@@ -51,7 +51,7 @@ define( 'RANKSAGE_CONNECT_SCRIPT_SRC', 'https://cdn.ranksage.io/rs.js' );
  *       site's tracking at somebody else's RankSage account.
  * NOTE: A public key is not a secret; publishing it is the point.
  */
-define( 'RANKSAGE_CONNECT_SIGNING_PUBLIC_KEY', 'a0db4eea7070119db142c7814ed47cf8375417fd0d20ed80267ba239e769e955' );
+define( 'RANKSAGE_CONNECT_SIGNING_PUBLIC_KEY', '11fae31ec5b3ac7c79b664da8288c1882a0f51f4c777453437a7d941d47ccb08' );
 
 /** Option holding the connection + user toggles. */
 define( 'RANKSAGE_CONNECT_OPTION', 'ranksage_connect_settings' );
