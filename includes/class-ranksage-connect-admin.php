@@ -202,7 +202,8 @@ class RankSage_Connect_Admin {
 		RankSage_Connect_Settings::store_connection(
 			sanitize_text_field( (string) $verified['publicTrackingKey'] ),
 			isset( $verified['siteToken'] ) ? sanitize_text_field( (string) $verified['siteToken'] ) : '',
-			isset( $verified['accountLabel'] ) ? sanitize_text_field( (string) $verified['accountLabel'] ) : ''
+			isset( $verified['accountLabel'] ) ? sanitize_text_field( (string) $verified['accountLabel'] ) : '',
+			isset( $verified['indexNowKey'] ) ? RankSage_Connect_Indexnow::sanitize_key( $verified['indexNowKey'] ) : ''
 		);
 		delete_option( RANKSAGE_CONNECT_CONFIG_OPTION );
 		RankSage_Connect_Flusher::ensure_scheduled();

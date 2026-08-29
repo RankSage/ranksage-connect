@@ -3,7 +3,7 @@
  * Plugin Name:       RankSage Connect
  * Plugin URI:        https://ranksage.com/integrations/wordpress
  * Description:       Connects your site to RankSage: adds the RankSage tracking tag and reports AI-crawler visits (GPTBot, ClaudeBot, PerplexityBot and friends) to your RankSage account. Nothing is sent until you connect an account.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.0
  * Tested up to:      7.0
  * Requires PHP:      7.4
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RANKSAGE_CONNECT_VERSION', '1.0.0' );
+define( 'RANKSAGE_CONNECT_VERSION', '1.1.0' );
 define( 'RANKSAGE_CONNECT_FILE', __FILE__ );
 define( 'RANKSAGE_CONNECT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RANKSAGE_CONNECT_URL', plugin_dir_url( __FILE__ ) );
@@ -86,6 +86,7 @@ require_once RANKSAGE_CONNECT_DIR . 'includes/class-ranksage-connect-cache-detec
 require_once RANKSAGE_CONNECT_DIR . 'includes/class-ranksage-connect-capture.php';
 require_once RANKSAGE_CONNECT_DIR . 'includes/class-ranksage-connect-flusher.php';
 require_once RANKSAGE_CONNECT_DIR . 'includes/class-ranksage-connect-head.php';
+require_once RANKSAGE_CONNECT_DIR . 'includes/class-ranksage-connect-indexnow.php';
 require_once RANKSAGE_CONNECT_DIR . 'includes/class-ranksage-connect-rest.php';
 require_once RANKSAGE_CONNECT_DIR . 'includes/class-ranksage-connect-admin.php';
 
@@ -98,6 +99,7 @@ require_once RANKSAGE_CONNECT_DIR . 'includes/class-ranksage-connect-admin.php';
  */
 function ranksage_connect_bootstrap() {
 	RankSage_Connect_Head::register();
+	RankSage_Connect_Indexnow::register();
 	RankSage_Connect_Capture::register();
 	RankSage_Connect_Flusher::register();
 	RankSage_Connect_Config::register();

@@ -178,7 +178,8 @@ class RankSage_Connect_Rest {
 		RankSage_Connect_Settings::store_connection(
 			sanitize_text_field( $verified['publicTrackingKey'] ),
 			isset( $verified['siteToken'] ) ? sanitize_text_field( (string) $verified['siteToken'] ) : '',
-			isset( $verified['accountLabel'] ) ? sanitize_text_field( (string) $verified['accountLabel'] ) : ''
+			isset( $verified['accountLabel'] ) ? sanitize_text_field( (string) $verified['accountLabel'] ) : '',
+			isset( $verified['indexNowKey'] ) ? RankSage_Connect_Indexnow::sanitize_key( $verified['indexNowKey'] ) : ''
 		);
 
 		// Config may have changed with the account; refetch immediately.

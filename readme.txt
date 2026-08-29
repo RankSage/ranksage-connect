@@ -4,7 +4,7 @@ Tags: ai crawlers, gptbot, analytics, seo, llm
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,10 +94,16 @@ No. The buffer is capped at 5,000 rows, and the cap is applied on every flush at
 
 == Changelog ==
 
+= 1.1.0 =
+* Serves the site's IndexNow key file at `/<key>.txt` (issued by RankSage on connect, refreshed with the daily signed config) so RankSage can notify Bing, Yandex, DuckDuckGo, Naver and Seznam when pages change. Still zero outbound requests on front-end page loads.
+
 = 1.0.0 =
 * Initial release: RankSage tracking tag injection, AI-crawler capture with buffered batch delivery, page-cache detection with per-cache fix instructions, and the `ranksage/v1` status/connect/disconnect REST namespace.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Adds IndexNow key-file hosting. Reconnect is not required: the key arrives with the next daily config pull.
 
 = 1.0.0 =
 Initial release.

@@ -24,7 +24,7 @@ class RankSage_Connect_Settings {
 	/**
 	 * Returns the connection settings with defaults filled in.
 	 *
-	 * @return array{connected:bool,api_base:string,public_key:string,site_token:string,script_enabled:bool,capture_enabled:bool,connected_at:int,account_label:string}
+	 * @return array{connected:bool,api_base:string,public_key:string,site_token:string,script_enabled:bool,capture_enabled:bool,connected_at:int,account_label:string,indexnow_key:string}
 	 */
 	public static function get() {
 		$defaults = array(
@@ -36,6 +36,8 @@ class RankSage_Connect_Settings {
 			'capture_enabled' => true,
 			'connected_at'    => 0,
 			'account_label'   => '',
+			// IndexNow key served at /<key>.txt (public by design). '' = none issued.
+			'indexnow_key'    => '',
 		);
 
 		$stored = get_option( RANKSAGE_CONNECT_OPTION, array() );
@@ -81,15 +83,17 @@ class RankSage_Connect_Settings {
 	 * @param string $public_key    RankSage public tracking key (rs_live_* / rs_staging_*).
 	 * @param string $site_token    Opaque per-site token used for config pulls.
 	 * @param string $account_label Human label shown in wp-admin.
+	 * @param string $indexnow_key  IndexNow key to serve at /<key>.txt ('' = none).
 	 * @return void
 	 */
-	public static function store_connection( $public_key, $site_token, $account_label = '' ) {
+	public static function store_connection( $public_key, $site_token, $account_label = '', $indexnow_key = '' ) {
 		self::update(
 			array(
 				'connected'     => true,
 				'public_key'    => $public_key,
 				'site_token'    => $site_token,
 				'account_label' => $account_label,
+				'indexnow_key'  => $indexnow_key,
 				'connected_at'  => time(),
 			)
 		);
@@ -106,6 +110,7 @@ class RankSage_Connect_Settings {
 				'connected'     => false,
 				'public_key'    => '',
 				'site_token'    => '',
+				'indexnow_key'  => '',
 				'account_label' => '',
 				'connected_at'  => 0,
 			)

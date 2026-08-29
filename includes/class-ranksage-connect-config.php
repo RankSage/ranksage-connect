@@ -322,6 +322,15 @@ class RankSage_Connect_Config {
 			}
 		}
 
+		// IndexNow key (a site-scoped response — the backend answers it only to a
+		// request carrying this site's token). Served at /<key>.txt; never a URL or code.
+		if ( isset( $payload['indexNowKey'] ) ) {
+			$indexnow_key = RankSage_Connect_Indexnow::sanitize_key( $payload['indexNowKey'] );
+			if ( '' !== $indexnow_key ) {
+				$config['indexnow_key'] = $indexnow_key;
+			}
+		}
+
 		// Kill switch: RankSage can stop all capture within one config TTL without a
 		// plugin release. It can only ever turn capture OFF, never force it on.
 		if ( isset( $payload['captureEnabled'] ) && false === $payload['captureEnabled'] ) {
