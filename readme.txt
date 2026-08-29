@@ -12,7 +12,7 @@ Connect your site to RankSage: add the RankSage tracking tag and see which AI cr
 
 == Description ==
 
-RankSage Connect links your WordPress site to your [RankSage](https://ranksage.com) account. It does exactly two things, and each one can be turned on or off independently:
+RankSage Connect links your WordPress site to your [RankSage](https://www.ranksage.com) account. RankSage joins what AI answer engines say about your brand with Google Search Console, GA4 and first-party visitor behaviour on one row — the page — and returns a ranked list of what to change next. This plugin does exactly two things for that join, and each one can be turned on or off independently:
 
 1. **Tracking tag** — adds the RankSage tracking script to your pages so RankSage can report on visits and behaviour.
 2. **AI-crawler capture** — records when an AI crawler (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, CCBot, Bytespider and similar) fetches one of your pages, and reports those visits to your RankSage account.
