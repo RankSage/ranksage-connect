@@ -3,7 +3,7 @@
  * Plugin Name:       RankSage Connect
  * Plugin URI:        https://ranksage.com/integrations/wordpress
  * Description:       Connects your site to RankSage: adds the RankSage tracking tag and reports AI-crawler visits (GPTBot, ClaudeBot, PerplexityBot and friends) to your RankSage account. Nothing is sent until you connect an account.
- * Version:           1.1.0
+ * Version:           1.1.1
  * Requires at least: 6.0
  * Tested up to:      7.0
  * Requires PHP:      7.4
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RANKSAGE_CONNECT_VERSION', '1.1.0' );
+define( 'RANKSAGE_CONNECT_VERSION', '1.1.1' );
 define( 'RANKSAGE_CONNECT_FILE', __FILE__ );
 define( 'RANKSAGE_CONNECT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RANKSAGE_CONNECT_URL', plugin_dir_url( __FILE__ ) );
@@ -38,9 +38,9 @@ define( 'RANKSAGE_CONNECT_URL', plugin_dir_url( __FILE__ ) );
  * NOTE: Remote config may adjust paths, UA tokens, intervals and the kill switch —
  *       never a hostname. See RankSage_Connect_Config::sanitize().
  */
-define( 'RANKSAGE_CONNECT_API_BASE', 'https://api.ranksage.io' );
-define( 'RANKSAGE_CONNECT_APP_BASE', 'https://app.ranksage.io' );
-define( 'RANKSAGE_CONNECT_SCRIPT_SRC', 'https://cdn.ranksage.io/rs.js' );
+define( 'RANKSAGE_CONNECT_API_BASE', 'https://api.ranksage.com' );
+define( 'RANKSAGE_CONNECT_APP_BASE', 'https://ranksage-dashboard-frontend.vercel.app' );
+define( 'RANKSAGE_CONNECT_SCRIPT_SRC', 'https://www.ranksage.com/rs.js' );
 
 /**
  * WHAT: Ed25519 public key (raw 32 bytes, hex) used to verify every payload RankSage

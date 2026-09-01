@@ -4,7 +4,7 @@ Tags: ai crawlers, gptbot, analytics, seo, llm
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,6 +94,9 @@ No. The buffer is capped at 5,000 rows, and the cap is applied on every flush at
 
 == Changelog ==
 
+= 1.1.1 =
+* Fixes the plugin's hosts: 1.1.0 pointed every request at `api.ranksage.io` / `app.ranksage.io` / `cdn.ranksage.io`, none of which resolve, so connect, config pulls and crawler-hit delivery could not succeed. The plugin now talks to `api.ranksage.com`, opens the dashboard at its live address, and loads the tracking tag from `www.ranksage.com/rs.js`. No settings change needed; reconnect once after updating.
+
 = 1.1.0 =
 * Serves the site's IndexNow key file at `/<key>.txt` (issued by RankSage on connect, refreshed with the daily signed config) so RankSage can notify Bing, Yandex, DuckDuckGo, Naver and Seznam when pages change. Still zero outbound requests on front-end page loads.
 
@@ -101,6 +104,9 @@ No. The buffer is capped at 5,000 rows, and the cap is applied on every flush at
 * Initial release: RankSage tracking tag injection, AI-crawler capture with buffered batch delivery, page-cache detection with per-cache fix instructions, and the `ranksage/v1` status/connect/disconnect REST namespace.
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Required update: 1.1.0 could not reach RankSage at all (wrong hosts). Update, then click Connect once.
 
 = 1.1.0 =
 Adds IndexNow key-file hosting. Reconnect is not required: the key arrives with the next daily config pull.
