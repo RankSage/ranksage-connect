@@ -22,6 +22,16 @@ class RankSage_Connect_Admin {
 	const PAGE_SLUG = 'ranksage-connect';
 
 	/**
+	 * User-meta key holding the cache-layer summary this user dismissed the notice for.
+	 * NOTE: Storing the summary (not a boolean) means a NEW cache layer re-shows the
+	 *       notice — dismissing "WP Rocket" must not silence a later "LiteSpeed Cache".
+	 */
+	const CACHE_NOTICE_META = 'ranksage_connect_cache_notice_dismissed';
+
+	/** Screens (WP_Screen ids) the cache notice may appear on besides our own page. */
+	const CACHE_NOTICE_SCREENS = array( 'dashboard', 'plugins' );
+
+	/**
 	 * Registers the admin hooks.
 	 *
 	 * @return void
@@ -112,6 +122,16 @@ class RankSage_Connect_Admin {
 				);
 			}
 			self::redirect_with_notice( 'error', 'link_expired' );
+		}
+
+		// --- Cache notice dismissal (persisted per user). ----------------------------
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- routed on, then nonce-verified by check_admin_referer() inside the branch.
+		if ( isset( $_GET['ranksage_dismiss_notice'] ) && 'cache' === sanitize_key( wp_unslash( $_GET['ranksage_dismiss_notice'] ) ) ) {
+			check_admin_referer( 'ranksage_connect_dismiss_notice' );
+			update_user_meta( get_current_user_id(), self::CACHE_NOTICE_META, RankSage_Connect_Cache_Detect::summary() );
+			$back = wp_get_referer();
+			wp_safe_redirect( $back ? remove_query_arg( array( 'ranksage_dismiss_notice', '_wpnonce' ), $back ) : admin_url() );
+			exit;
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- routed on, then nonce-verified inside each branch via check_admin_referer().
@@ -248,29 +268,39 @@ class RankSage_Connect_Admin {
 	 */
 	private static function detail_messages() {
 		return array(
-			'link_expired'               => __( 'The connection link expired. Please click Connect again.', 'ranksage-connect' ),
-			'ranksage_exchange_failed'   => __( 'RankSage could not confirm this connection. Please try again from your RankSage dashboard.', 'ranksage-connect' ),
-			'ranksage_exchange_shape'    => __( 'RankSage returned a response this plugin did not understand.', 'ranksage-connect' ),
-			'ranksage_site_mismatch'     => __( 'That configuration was issued for a different site.', 'ranksage-connect' ),
-			'ranksage_missing_key'       => __( 'RankSage did not return a tracking key.', 'ranksage-connect' ),
-			'ranksage_no_sodium'         => __( 'The PHP sodium extension is unavailable, so the signed configuration cannot be verified.', 'ranksage-connect' ),
-			'ranksage_bad_payload'       => __( 'The RankSage payload was malformed.', 'ranksage-connect' ),
-			'ranksage_bad_signature'     => __( 'The RankSage payload signature was malformed.', 'ranksage-connect' ),
-			'ranksage_signature_failed'  => __( 'The RankSage payload signature did not verify.', 'ranksage-connect' ),
-			'ranksage_bad_json'          => __( 'The RankSage payload was not valid JSON.', 'ranksage-connect' ),
-			'ranksage_stale_payload'     => __( 'The RankSage payload was outside the accepted time window. Check this server\'s clock.', 'ranksage-connect' ),
-			'ranksage_unreachable'       => __( 'RankSage could not be reached from this server.', 'ranksage-connect' ),
+			'link_expired'              => __( 'The connection link expired. Please click Connect again.', 'ranksage-connect' ),
+			'ranksage_exchange_failed'  => __( 'RankSage could not confirm this connection. Please try again from your RankSage dashboard.', 'ranksage-connect' ),
+			'ranksage_exchange_shape'   => __( 'RankSage returned a response this plugin did not understand.', 'ranksage-connect' ),
+			'ranksage_site_mismatch'    => __( 'That configuration was issued for a different site.', 'ranksage-connect' ),
+			'ranksage_missing_key'      => __( 'RankSage did not return a tracking key.', 'ranksage-connect' ),
+			'ranksage_no_sodium'        => __( 'The PHP sodium extension is unavailable, so the signed configuration cannot be verified.', 'ranksage-connect' ),
+			'ranksage_bad_payload'      => __( 'The RankSage payload was malformed.', 'ranksage-connect' ),
+			'ranksage_bad_signature'    => __( 'The RankSage payload signature was malformed.', 'ranksage-connect' ),
+			'ranksage_signature_failed' => __( 'The RankSage payload signature did not verify.', 'ranksage-connect' ),
+			'ranksage_bad_json'         => __( 'The RankSage payload was not valid JSON.', 'ranksage-connect' ),
+			'ranksage_stale_payload'    => __( 'The RankSage payload was outside the accepted time window. Check this server\'s clock.', 'ranksage-connect' ),
+			'ranksage_unreachable'      => __( 'RankSage could not be reached from this server.', 'ranksage-connect' ),
 		);
 	}
 
 	/**
-	 * WHAT: Site-wide admin notice when a page cache is degrading crawler capture.
-	 * WHY:  A degraded capability the user never sees is the same as a silent failure.
+	 * WHAT: Admin notice when a page cache is degrading crawler capture.
+	 * HOW:  Shown only on the Dashboard and Plugins screens (our own settings page
+	 *       already carries the same finding in its status table), only to users who
+	 *       can manage options, and never again to a user who dismissed it for the SAME
+	 *       set of cache layers. Dismissal is a nonce-protected link persisted in user meta.
+	 * WHY:  A degraded capability the user never sees is the same as a silent failure —
+	 *       but a notice nailed to every admin screen is the nag wordpress.org guideline
+	 *       11 forbids. Two screens plus a real dismiss is the line between the two.
 	 *
 	 * @return void
 	 */
 	public static function maybe_cache_notice() {
 		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || ! in_array( $screen->id, self::CACHE_NOTICE_SCREENS, true ) ) {
 			return;
 		}
 		$settings = RankSage_Connect_Settings::get();
@@ -281,14 +311,48 @@ class RankSage_Connect_Admin {
 		if ( '' === $cache_layer ) {
 			return;
 		}
+		if ( get_user_meta( get_current_user_id(), self::CACHE_NOTICE_META, true ) === $cache_layer ) {
+			return;
+		}
+
+		$dismiss_url = wp_nonce_url(
+			add_query_arg( 'ranksage_dismiss_notice', 'cache' ),
+			'ranksage_connect_dismiss_notice'
+		);
 
 		printf(
-			'<div class="notice notice-warning"><p><strong>%s</strong> %s <a href="%s">%s</a></p></div>',
+			'<div class="notice notice-warning"><p><strong>%1$s</strong> %2$s <a href="%3$s">%4$s</a> &middot; <a href="%5$s">%6$s</a></p></div>',
 			esc_html__( 'RankSage:', 'ranksage-connect' ),
 			esc_html( RankSage_Connect_Cache_Detect::coverage_message( $cache_layer ) ),
 			esc_url( admin_url( 'options-general.php?page=' . self::PAGE_SLUG ) ),
-			esc_html__( 'How to fix', 'ranksage-connect' )
+			esc_html__( 'How to fix', 'ranksage-connect' ),
+			esc_url( $dismiss_url ),
+			esc_html__( 'Dismiss', 'ranksage-connect' )
 		);
+	}
+
+	/**
+	 * WHAT: The RankSage dashboard origin the Connect button opens.
+	 * HOW:  RANKSAGE_CONNECT_APP_BASE (overridable in wp-config.php), passed through the
+	 *       `ranksage_connect_app_base` filter; anything that is not an https URL is
+	 *       ignored in favour of the constant.
+	 * WHY:  Lets a staging or self-hosted RankSage install point the connect flow at its
+	 *       own dashboard without editing plugin code — and only code the site owner
+	 *       controls can do it, never a remote response.
+	 *
+	 * @return string Origin without a trailing slash.
+	 */
+	private static function app_base() {
+		/**
+		 * Filters the RankSage dashboard origin used by the Connect button.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param string $app_base Default origin, e.g. https://app.ranksage.com.
+		 */
+		$filtered = apply_filters( 'ranksage_connect_app_base', RANKSAGE_CONNECT_APP_BASE );
+		$filtered = is_string( $filtered ) ? esc_url_raw( $filtered, array( 'https' ) ) : '';
+		return untrailingslashit( '' !== $filtered ? $filtered : RANKSAGE_CONNECT_APP_BASE );
 	}
 
 	/**
@@ -319,13 +383,19 @@ class RankSage_Connect_Admin {
 
 		echo '<p class="description">';
 		printf(
-			/* translators: 1: terms of service URL, 2: privacy policy URL. */
 			wp_kses(
+				/* translators: 1: terms of service URL, 2: privacy policy URL. */
 				__( 'RankSage is an external service. <a href="%1$s" target="_blank" rel="noopener noreferrer">Terms of Service</a> · <a href="%2$s" target="_blank" rel="noopener noreferrer">Privacy Policy</a>', 'ranksage-connect' ),
-				array( 'a' => array( 'href' => array(), 'target' => array(), 'rel' => array() ) )
+				array(
+					'a' => array(
+						'href'   => array(),
+						'target' => array(),
+						'rel'    => array(),
+					),
+				)
 			),
-			'https://ranksage.com/terms',
-			'https://ranksage.com/privacy'
+			esc_url( RANKSAGE_CONNECT_SITE_BASE . '/terms' ),
+			esc_url( RANKSAGE_CONNECT_SITE_BASE . '/privacy' )
 		);
 		echo '</p></div>';
 	}
@@ -397,12 +467,12 @@ class RankSage_Connect_Admin {
 				'nonce'  => rawurlencode( wp_create_nonce( 'ranksage_connect_start' ) ),
 				'return' => rawurlencode( admin_url( 'options-general.php?page=' . self::PAGE_SLUG ) ),
 			),
-			RANKSAGE_CONNECT_APP_BASE . '/wp-connect'
+			self::app_base() . '/wp-connect'
 		);
 
 		echo '<div class="card ranksage-card">';
 		echo '<h2>' . esc_html__( 'Connect this site', 'ranksage-connect' ) . '</h2>';
-		echo '<p>' . esc_html__( 'RankSage Connect sends nothing anywhere until you connect an account. Once connected it does exactly two things: it adds the RankSage tracking tag to your pages, and it reports AI-crawler visits (user-agent, path and timestamp only) to your RankSage account. Both can be turned off independently below.', 'ranksage-connect' ) . '</p>';
+		echo '<p>' . esc_html__( 'RankSage Connect sends nothing anywhere until you connect an account. Once connected it adds the RankSage tracking tag to your pages (visitor behaviour analytics), reports AI-crawler visits (user-agent, path and timestamp only) to your RankSage account, and serves your IndexNow key file. The tag and the crawler reporting can each be turned off after connecting.', 'ranksage-connect' ) . '</p>';
 		printf(
 			'<p><a class="button button-primary" href="%s">%s</a></p>',
 			esc_url( $connect_url ),

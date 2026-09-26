@@ -1,46 +1,62 @@
 <?php
 /**
  * Plugin Name:       RankSage Connect
- * Plugin URI:        https://ranksage.com/integrations/wordpress
+ * Plugin URI:        https://www.ranksage.com/integrations/wordpress
  * Description:       Connects your site to RankSage: adds the RankSage tracking tag and reports AI-crawler visits (GPTBot, ClaudeBot, PerplexityBot and friends) to your RankSage account. Nothing is sent until you connect an account.
- * Version:           1.1.1
- * Requires at least: 6.0
- * Tested up to:      7.0
+ * Version:           1.2.0
+ * Requires at least: 6.3
+ * Tested up to:      7.1
  * Requires PHP:      7.4
  * Author:            RankSage
- * Author URI:        https://ranksage.com
- * License:           GPL-2.0-or-later
+ * Author URI:        https://www.ranksage.com
+ * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       ranksage-connect
  *
  * @package RankSage_Connect
  */
 
-// WHAT: Refuse direct file access.
-// WHY:  Standard WordPress hardening — every PHP file in the plugin must be inert
-//       when requested directly rather than loaded through WordPress.
+/*
+ * WHAT: Refuse direct file access.
+ * WHY:  Standard WordPress hardening — every PHP file in the plugin must be inert
+ *       when requested directly rather than loaded through WordPress.
+ */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RANKSAGE_CONNECT_VERSION', '1.1.1' );
+define( 'RANKSAGE_CONNECT_VERSION', '1.2.0' );
 define( 'RANKSAGE_CONNECT_FILE', __FILE__ );
 define( 'RANKSAGE_CONNECT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RANKSAGE_CONNECT_URL', plugin_dir_url( __FILE__ ) );
 
 /**
  * WHAT: The RankSage hosts this plugin is allowed to talk to, and the tracking script URL.
- * WHY:  These are COMPILED-IN and deliberately not remotely overridable. The April 2026
+ * HOW:  Each one is a constant with a production default that a site owner (or a
+ *       RankSage staging/dev install) may pre-define in wp-config.php BEFORE the plugin
+ *       loads, e.g. `define( 'RANKSAGE_CONNECT_API_BASE', 'https://staging-api.example' );`.
+ * WHY:  The hosts are deliberately NOT remotely overridable. The April 2026
  *       wordpress.org supply-chain incident was delivered through a plugin's own
- *       "analytics module" pointing at an attacker-controlled host. Pinning the host
- *       means a compromised config response can change behaviour but can never
- *       exfiltrate to a new destination.
- * NOTE: Remote config may adjust paths, UA tokens, intervals and the kill switch —
- *       never a hostname. See RankSage_Connect_Config::sanitize().
+ *       "analytics module" pointing at an attacker-controlled host. Only code the site
+ *       owner controls (wp-config.php, or the `ranksage_connect_app_base` filter for the
+ *       connect link) can move them; a compromised config response never can.
+ * NOTE: A distributed plugin has no environment of its own, so these defaults are the
+ *       published production hosts, not a fallback for a missing variable. Remote config
+ *       may adjust paths, UA tokens, intervals and the kill switch — never a hostname.
+ *       See RankSage_Connect_Config::sanitize().
  */
-define( 'RANKSAGE_CONNECT_API_BASE', 'https://api.ranksage.com' );
-define( 'RANKSAGE_CONNECT_APP_BASE', 'https://ranksage-dashboard-frontend.vercel.app' );
-define( 'RANKSAGE_CONNECT_SCRIPT_SRC', 'https://www.ranksage.com/rs.js' );
+if ( ! defined( 'RANKSAGE_CONNECT_API_BASE' ) ) {
+	define( 'RANKSAGE_CONNECT_API_BASE', 'https://api.ranksage.com' );
+}
+if ( ! defined( 'RANKSAGE_CONNECT_APP_BASE' ) ) {
+	define( 'RANKSAGE_CONNECT_APP_BASE', 'https://app.ranksage.com' );
+}
+if ( ! defined( 'RANKSAGE_CONNECT_SCRIPT_SRC' ) ) {
+	define( 'RANKSAGE_CONNECT_SCRIPT_SRC', 'https://www.ranksage.com/rs.js' );
+}
+if ( ! defined( 'RANKSAGE_CONNECT_SITE_BASE' ) ) {
+	define( 'RANKSAGE_CONNECT_SITE_BASE', 'https://www.ranksage.com' );
+}
 
 /**
  * WHAT: Ed25519 public key (raw 32 bytes, hex) used to verify every payload RankSage

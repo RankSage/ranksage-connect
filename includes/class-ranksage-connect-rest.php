@@ -105,9 +105,9 @@ class RankSage_Connect_Rest {
 	 * @return array
 	 */
 	public static function build_status() {
-		$settings    = RankSage_Connect_Settings::get();
-		$state       = RankSage_Connect_Settings::get_state();
-		$config      = RankSage_Connect_Config::get();
+		$settings         = RankSage_Connect_Settings::get();
+		$state            = RankSage_Connect_Settings::get_state();
+		$config           = RankSage_Connect_Config::get();
 		$cache_layer      = RankSage_Connect_Cache_Detect::summary();
 		$overflow_message = RankSage_Connect_Flusher::overflow_message();
 

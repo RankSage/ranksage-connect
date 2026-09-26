@@ -48,22 +48,50 @@ mkdir -p "${STAGE}"
 cp "${HERE}/${SLUG}.php"  "${STAGE}/"
 cp "${HERE}/readme.txt"   "${STAGE}/"
 cp "${HERE}/uninstall.php" "${STAGE}/"
+# GPL-2.0 text travels with the code — wordpress.org expects the licence in the zip.
+cp "${HERE}/LICENSE"      "${STAGE}/"
 cp -R "${HERE}/includes"  "${STAGE}/"
 cp -R "${HERE}/admin"     "${STAGE}/"
 
 # Belt and braces: nothing that could carry local state.
 find "${STAGE}" \( -name '.DS_Store' -o -name '*.log' -o -name '.env*' -o -name '*.map' \) -delete
 
-VERSION="$(grep -m1 '^ \* Version:' "${HERE}/${SLUG}.php" | awk '{print $3}')"
-README_STABLE="$(grep -m1 '^Stable tag:' "${HERE}/readme.txt" | awk '{print $3}')"
+header_field() { grep -m1 "^ \* $1:" "${HERE}/${SLUG}.php" | sed -E "s/^ \* $1:[[:space:]]*//" | tr -d '\r'; }
+readme_field() { grep -m1 "^$1:" "${HERE}/readme.txt" | sed -E "s/^$1:[[:space:]]*//" | tr -d '\r'; }
 
-# wordpress.org serves whatever `Stable tag` points at. A mismatch ships the
-# wrong code, or nothing at all.
-if [ "${VERSION}" != "${README_STABLE}" ]; then
+VERSION="$(header_field 'Version')"
+CONST_VERSION="$(grep -m1 "define( 'RANKSAGE_CONNECT_VERSION'" "${HERE}/${SLUG}.php" | sed -E "s/.*'([0-9.]+)'.*/\1/")"
+README_STABLE="$(readme_field 'Stable tag')"
+
+# wordpress.org serves whatever `Stable tag` points at, and the plugin reports
+# RANKSAGE_CONNECT_VERSION to RankSage. Any disagreement ships the wrong code or
+# lies about which code is running.
+if [ "${VERSION}" != "${README_STABLE}" ] || [ "${VERSION}" != "${CONST_VERSION}" ]; then
   echo "REFUSING TO BUILD — version mismatch." >&2
-  echo "  ${SLUG}.php Version:   ${VERSION}" >&2
-  echo "  readme.txt Stable tag: ${README_STABLE}" >&2
+  echo "  ${SLUG}.php Version:          ${VERSION}" >&2
+  echo "  RANKSAGE_CONNECT_VERSION:     ${CONST_VERSION}" >&2
+  echo "  readme.txt Stable tag:        ${README_STABLE}" >&2
   exit 1
+fi
+
+# The header and the readme must agree on the compatibility window, or the
+# directory listing and the installer disagree about who can run the plugin.
+for field in 'Requires at least' 'Tested up to' 'Requires PHP'; do
+  if [ "$(header_field "${field}")" != "$(readme_field "${field}")" ]; then
+    echo "REFUSING TO BUILD — '${field}' differs between ${SLUG}.php and readme.txt." >&2
+    exit 1
+  fi
+done
+
+# Syntax-check every shipped PHP file when a PHP binary is available. Missing PHP
+# is reported, not silently skipped.
+if command -v php >/dev/null 2>&1; then
+  while IFS= read -r -d '' php_file; do
+    php -l "${php_file}" >/dev/null || { echo "REFUSING TO BUILD — php -l failed: ${php_file}" >&2; exit 1; }
+  done < <(find "${STAGE}" -name '*.php' -print0)
+  echo "php -l: every PHP file passed"
+else
+  echo "WARNING: php not on PATH — skipped php -l syntax check" >&2
 fi
 
 ( cd "${OUT}" && zip -rq "${SLUG}.zip" "${SLUG}" )
@@ -71,4 +99,4 @@ rm -rf "${STAGE}"
 
 echo "Built ${OUT}/${SLUG}.zip (version ${VERSION})"
 echo "Top-level folder inside the zip: ${SLUG}/  — required by wordpress.org"
-unzip -l "${OUT}/${SLUG}.zip" | tail -n +4 | head -20
+unzip -l "${OUT}/${SLUG}.zip"

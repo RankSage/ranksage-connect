@@ -127,7 +127,7 @@ class RankSage_Connect_Capture {
 		if ( false === $inserted ) {
 			RankSage_Connect_Settings::update_state(
 				array(
-					'last_error'    => 'buffer insert failed',
+					'last_error'    => __( 'Could not save an AI-crawler visit to the local buffer table.', 'ranksage-connect' ),
 					'last_error_at' => time(),
 				)
 			);
@@ -191,7 +191,7 @@ class RankSage_Connect_Capture {
 	 */
 	public static function buffer_depth() {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is built from $wpdb->prefix, not user input, and cannot be parameterised.
-		return (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . self::table() );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live depth of a write buffer; caching it would defeat the threshold check.
+		return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', self::table() ) );
 	}
 }

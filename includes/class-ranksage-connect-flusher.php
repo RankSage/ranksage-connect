@@ -50,7 +50,7 @@ class RankSage_Connect_Flusher {
 	 * @return void
 	 */
 	public static function register() {
-		add_filter( 'cron_schedules', array( __CLASS__, 'add_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.ChangeDetected -- a five-minute flush is the documented design; it performs one outbound request.
+		add_filter( 'cron_schedules', array( __CLASS__, 'add_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval -- a five-minute flush is the documented design; it performs one outbound request.
 		add_action( RANKSAGE_CONNECT_FLUSH_HOOK, array( __CLASS__, 'flush' ) );
 		add_action( RANKSAGE_CONNECT_FLUSH_NOW_HOOK, array( __CLASS__, 'flush' ) );
 		add_action( 'init', array( __CLASS__, 'ensure_scheduled' ), 20 );
@@ -156,8 +156,8 @@ class RankSage_Connect_Flusher {
 
 		$limit = max( 1, min( self::MAX_BATCH_SIZE, (int) $config['flush_batch_size'] ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is derived from $wpdb->prefix; the only variable is bound via prepare().
-		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT id, path, ua, hit_ts FROM ' . $table . ' ORDER BY id ASC LIMIT %d', $limit ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- dedicated write buffer; rows are read once and deleted.
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT id, path, ua, hit_ts FROM %i ORDER BY id ASC LIMIT %d', $table, $limit ) );
 
 		if ( empty( $rows ) ) {
 			RankSage_Connect_Settings::update_state( array( 'last_flush' => time() ) );
@@ -195,12 +195,18 @@ class RankSage_Connect_Flusher {
 
 		$status = (int) wp_remote_retrieve_response_code( $response );
 		if ( $status < 200 || $status >= 300 ) {
-			self::record_failure( sprintf( 'HTTP %d from RankSage', $status ) );
+			self::record_failure(
+				sprintf(
+					/* translators: %d: HTTP status code returned by RankSage. */
+					__( 'RankSage answered HTTP %d when this site sent AI-crawler visits.', 'ranksage-connect' ),
+					$status
+				)
+			);
 			return;
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is derived from $wpdb->prefix; the only variable is bound via prepare().
-		$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . $table . ' WHERE id <= %d', $max_id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- dedicated write buffer; see above.
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE id <= %d', $table, $max_id ) );
 
 		RankSage_Connect_Settings::update_state(
 			array(
@@ -265,11 +271,11 @@ class RankSage_Connect_Flusher {
 		$table  = RankSage_Connect_Capture::table();
 		$excess = $depth - $max_rows;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is derived from $wpdb->prefix; the only variable is bound via prepare().
-		$cutoff = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . $table . ' ORDER BY id ASC LIMIT 1 OFFSET %d', $excess - 1 ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- dedicated write buffer; see flush().
+		$cutoff = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM %i ORDER BY id ASC LIMIT 1 OFFSET %d', $table, $excess - 1 ) );
 		if ( $cutoff > 0 ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- see above.
-			$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . $table . ' WHERE id <= %d', $cutoff ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- see above.
+			$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE id <= %d', $table, $cutoff ) );
 		}
 
 		$state = RankSage_Connect_Settings::get_state();

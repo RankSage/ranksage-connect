@@ -79,12 +79,14 @@ class RankSage_Connect_Indexnow {
 		if ( is_admin() || wp_doing_cron() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
 			return;
 		}
-		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( (string) $_SERVER['REQUEST_METHOD'] ) : '';
+		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : '';
 		if ( 'GET' !== $method && 'HEAD' !== $method ) {
 			return;
 		}
 
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+		// esc_url_raw() keeps the path characters a URL may legally carry; only the path
+		// component is used below, and it must then match a strict [A-Za-z0-9-] pattern.
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 		$path        = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
 
 		// Subdirectory installs: the key file lives at the WordPress home root.

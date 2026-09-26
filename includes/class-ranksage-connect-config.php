@@ -32,7 +32,11 @@ class RankSage_Connect_Config {
 	/** Payloads older than this are rejected as replays. */
 	const MAX_PAYLOAD_AGE = 900;
 
-	/** In-request memo so repeated get() calls do no repeated work. */
+	/**
+	 * In-request memo so repeated get() calls do no repeated work.
+	 *
+	 * @var array|null
+	 */
 	private static $memo = null;
 
 	/**
@@ -82,6 +86,7 @@ class RankSage_Connect_Config {
 			return new WP_Error( 'ranksage_bad_payload', __( 'Malformed RankSage payload.', 'ranksage-connect' ) );
 		}
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- decodes the Ed25519 signature bytes for verification; nothing decoded here is ever executed.
 		$signature = base64_decode( $signature_b64, true );
 		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- hex2bin() emits a warning on malformed input; the false return is handled immediately below.
 		$public_key = @hex2bin( RANKSAGE_CONNECT_SIGNING_PUBLIC_KEY );
@@ -163,7 +168,11 @@ class RankSage_Connect_Config {
 			);
 			RankSage_Connect_Settings::update_state(
 				array(
-					'last_error'    => 'config: ' . $fetched->get_error_message(),
+					'last_error'    => sprintf(
+						/* translators: %s: reason the configuration download failed. */
+						__( 'Could not refresh the RankSage configuration: %s', 'ranksage-connect' ),
+						$fetched->get_error_message()
+					),
 					'last_error_at' => time(),
 				)
 			);
