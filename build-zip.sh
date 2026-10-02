@@ -76,12 +76,24 @@ fi
 
 # The header and the readme must agree on the compatibility window, or the
 # directory listing and the installer disagree about who can run the plugin.
-for field in 'Requires at least' 'Tested up to' 'Requires PHP'; do
+for field in 'Requires at least' 'Requires PHP'; do
   if [ "$(header_field "${field}")" != "$(readme_field "${field}")" ]; then
     echo "REFUSING TO BUILD — '${field}' differs between ${SLUG}.php and readme.txt." >&2
     exit 1
   fi
 done
+
+# 'Tested up to' is a readme field only (wordpress.org review, 28 Sep 2026): a copy in
+# the plugin header can override the readme on the directory page. Readme must have it,
+# the header must not.
+if [ -n "$(header_field 'Tested up to')" ]; then
+  echo "REFUSING TO BUILD — 'Tested up to' belongs in readme.txt only; remove it from ${SLUG}.php." >&2
+  exit 1
+fi
+if [ -z "$(readme_field 'Tested up to')" ]; then
+  echo "REFUSING TO BUILD — readme.txt has no 'Tested up to' line." >&2
+  exit 1
+fi
 
 # Syntax-check every shipped PHP file when a PHP binary is available. Missing PHP
 # is reported, not silently skipped.

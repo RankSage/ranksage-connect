@@ -4,7 +4,7 @@ Tags: ai crawlers, gptbot, analytics, seo, indexnow
 Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,9 @@ No. The buffer is capped at 5,000 rows, and the cap is applied on every flush at
 
 == Changelog ==
 
+= 1.2.1 =
+* "Tested up to" is now declared only in readme.txt, as the directory expects; the plugin header no longer repeats it. No functional change.
+
 = 1.2.0 =
 * The tracking tag is now added with `wp_enqueue_script()` (deferred) instead of a hand-printed tag, so caching, optimisation and CSP plugins can see and manage it. Requires WordPress 6.3 or later.
 * The tag now tells the tracking script where to send events (the RankSage API rather than your own site's `/e`, which does not exist on WordPress).
@@ -162,6 +165,9 @@ No. The buffer is capped at 5,000 rows, and the cap is applied on every flush at
 * Initial release: RankSage tracking tag injection, AI-crawler capture with buffered batch delivery, page-cache detection with per-cache fix instructions, and the `ranksage/v1` status/connect/disconnect REST namespace.
 
 == Upgrade Notice ==
+
+= 1.2.1 =
+Housekeeping release for the directory listing. No functional change, no reconnect needed.
 
 = 1.2.0 =
 Requires WordPress 6.3+. The tracking tag now loads through the WordPress script API, and the Connect button opens app.ranksage.com. No reconnect needed.
