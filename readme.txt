@@ -1,42 +1,54 @@
 === RankSage Connect ===
 Contributors: ranksage
-Tags: ai crawlers, gptbot, analytics, seo, indexnow
+Tags: ai visibility, ai crawlers, chatgpt, seo, analytics
 Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Connect your site to RankSage: add the RankSage tracking tag and see which AI crawlers (GPTBot, ClaudeBot, PerplexityBot) read your pages.
+See which AI crawlers read your pages and whether ChatGPT, Perplexity and Google AI Overviews mention your brand. Free RankSage account.
 
 == Description ==
 
-RankSage Connect links your WordPress site to your [RankSage](https://www.ranksage.com) account. RankSage joins what AI answer engines say about your brand with Google Search Console, GA4 and first-party visitor behaviour on one row — the page — and returns a ranked list of what to change next. This plugin does three things for that join:
+**Search has split in two.** Your visitors still arrive from Google, but more and more of them ask ChatGPT, Perplexity, Claude or Google AI Overviews first and never see a results page. Those answer engines read your site with their own crawlers, decide whether to mention you, and send you traffic only when they do. Standard analytics cannot see any of it.
 
-1. **Tracking tag** — adds the RankSage tracking script (`rs.js`) to your pages so RankSage can report on visits and behaviour. Can be turned off.
-2. **AI-crawler capture** — records when an AI crawler (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, CCBot, Bytespider and similar) fetches one of your pages, and reports those visits to your RankSage account. Can be turned off.
-3. **IndexNow key file** — serves your site's IndexNow key at `/<key>.txt`, so RankSage can tell Bing, Yandex and other IndexNow engines when your pages change.
+RankSage Connect is the WordPress side of [RankSage](https://www.ranksage.com), the AI visibility and search platform for small teams. Install it, connect once, and your site starts answering the two questions every WordPress owner now has:
 
-AI crawlers fetch your HTML without running JavaScript. That means no browser-based analytics tool — including Google Analytics — can see them. A server-side record is the only way this data exists at all, and it is the data that tells you whether ChatGPT, Claude and Perplexity are actually reading your content.
+* **Are AI engines reading my pages?** Every visit from GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot and the other AI crawlers is recorded on your server, page by page, and shows up in your RankSage dashboard. Google Analytics and every other browser-based tool miss these completely, because AI crawlers never run JavaScript.
+* **Are they mentioning my brand?** RankSage asks the questions your buyers ask across ten answer engines, stores the full answers as evidence, and tells you where you are cited, where a competitor is cited instead, and what to change next.
 
-**Nothing is sent anywhere until you connect a RankSage account.** An installed but unconnected plugin makes no outbound request of any kind and adds nothing to your pages.
+= What you get =
 
-= How this differs from an SEO plugin =
+* **AI crawler visibility, page by page.** Which crawlers came, which pages they fetched, how often, and how that lines up with the pages that get cited in AI answers. If an engine reads your pricing page every week but never mentions you, that is a fixable gap — and RankSage shows you the fix.
+* **One ranked list of what to do next.** RankSage joins AI answers, Google Search Console, GA4 and real visitor behaviour on one row per page, then turns the result into a single prioritised queue. No five dashboards, no guessing.
+* **Faster indexing of new and changed pages.** The plugin serves your IndexNow key so RankSage can tell Bing, Yandex and other IndexNow engines the moment a page changes.
+* **Honest numbers.** If a page cache or CDN is hiding part of your crawler traffic, the settings screen says so and shows the exact exclusion steps for your cache plugin, instead of showing you a count that quietly undercounts.
+* **Works alongside your SEO plugin.** Yoast SEO, Rank Math, All in One SEO: keep them. RankSage Connect changes nothing about your titles, meta, sitemaps or schema. It measures what those tools cannot.
+* **Light by design.** On a normal page view the plugin does one user-agent check and returns. No database query, no network call, nothing added to the page unless you turn the optional tracking tag on.
 
-SEO plugins such as Yoast SEO, Rank Math or All in One SEO edit what your pages say to search engines — titles, meta, sitemaps, schema. They do not record which AI crawlers actually fetched which pages, and they cannot, because that requires a server-side record taken before any page cache answers. RankSage Connect does not touch your content or your SEO settings at all; it measures. It records AI-crawler fetches server-side, tells you honestly when a page cache is hiding part of that traffic (and how to fix it for your specific cache), and feeds the result into RankSage, where it sits next to your Search Console clicks, GA4 sessions and AI-answer citations for the same page. It runs happily alongside any SEO plugin.
+= Who it is for =
 
-= Honest note about page caches =
+Founders, marketers and agencies who run WordPress sites and want to know whether the AI shift is sending them customers or sending them to a competitor. You do not need to be technical: connect, then read the dashboard.
 
-If your site uses a full-page cache, cached pages are served **without running PHP at all**. No WordPress plugin — this one included — can observe those requests.
+= Set up in two minutes =
 
-**What this plugin can detect:** cache layers that announce themselves to PHP — WP Rocket, LiteSpeed Cache, W3 Total Cache, WP Super Cache, SiteGround Optimizer, WP Engine, Kinsta, WordPress VIP, and the generic `WP_CACHE` / `advanced-cache.php` signals. When one is found, the settings screen says so and gives you the exact exclusion steps for it.
+1. Install and activate the plugin.
+2. Go to **Settings → RankSage** and click **Connect to RankSage**. Sign in or create a free account.
+3. You are sent back to WordPress, connected. AI-crawler capture and the optional tracking tag are on by default and can each be switched off at any time.
 
-**What this plugin cannot detect:** an edge or CDN cache in front of your server — Cloudflare, Fastly, a host's own edge tier. There is no reliable way to see those from PHP, because a request served at the edge never reaches your server at all. If you run one, assume your AI-crawler coverage is undercounted by however much the edge absorbs, and use the RankSage Cloudflare Worker snippet — that runs at the edge itself and is the only path to complete coverage.
+Nothing is sent anywhere until you click Connect. Disconnect at any time from the same screen and everything stops immediately.
 
-We would rather tell you where the number is incomplete than show you one that quietly undercounts.
+= Why a WordPress plugin is the only way to see AI crawlers =
 
-== External services ==
+AI crawlers fetch your HTML without running JavaScript, so no script-based analytics tool can record them. The only place the visit exists is on your server, before any page cache answers. This plugin takes that record, buffers it locally and ships it to your RankSage account on a schedule, never during a page load.
+
+If your host uses a full-page cache, cached pages are served without running PHP, and no plugin can see those requests. RankSage Connect detects WP Rocket, LiteSpeed Cache, W3 Total Cache, WP Super Cache, SiteGround Optimizer, WP Engine, Kinsta, WordPress VIP and the generic `WP_CACHE` signal, and gives you the exclusion steps for each. Edge caches such as Cloudflare cannot be seen from PHP at all; for full coverage behind an edge, RankSage offers a Cloudflare Worker snippet.
+
+= Privacy and what is sent =
+
+We would rather over-explain than surprise you. The plugin contacts no server until you connect. After you connect it talks only to RankSage, never sends visitor personal data from the crawler feature, and never stores a RankSage secret on your site. The complete disclosure of every request, what it contains and when it happens is below; it is long on purpose.
 
 This plugin connects your site to **RankSage**, an external SaaS product operated by RankSage. It needs a RankSage account to do anything.
 
@@ -95,46 +107,50 @@ Your RankSage *public* tracking key (the same key visible in your page source), 
 
 == Installation ==
 
-1. Install and activate RankSage Connect.
+1. Install and activate RankSage Connect from Plugins → Add New.
 2. Go to **Settings → RankSage**.
 3. Click **Connect to RankSage** and sign in (or create a free account).
 4. You are returned to WordPress connected. The tracking tag and AI-crawler capture are on by default and can be toggled independently.
 
-You can also start from your RankSage dashboard: **Integrations → WordPress** will walk you through connecting, and can install this plugin for you if your host allows plugin installs from the dashboard.
+You can also start from your RankSage dashboard: **Integrations → WordPress** walks you through connecting and can install this plugin for you if your host allows plugin installs from the dashboard.
 
 == Frequently Asked Questions ==
 
-= Does this plugin slow down my site? =
-
-On an ordinary page request the plugin performs one lowercase conversion and one substring search over the user-agent, and then returns. There is no database query and no network call. Only when the user-agent matches a known AI crawler does it write a single row — and that write is deferred until after the response has been sent to the visitor. Delivery to RankSage happens on a schedule, never during a page load.
-
-= What data does the plugin send, and how do I stop it? =
-
-Nothing at all until you connect. After you connect: AI-crawler visits (crawler user-agent, path, timestamp — never human visitors), a daily configuration request, and — while the tracking tag is on — the visitor analytics described under External services, sent by your visitors' browsers. To stop only visitor analytics, untick "Add the RankSage tracking tag" under Settings → RankSage. To stop everything, click **Disconnect from RankSage** on the same screen: the tag is removed from your pages, scheduled sends are cancelled and the stored keys are deleted from your site immediately. To also delete data RankSage already holds, remove the site in your RankSage dashboard or contact RankSage as described in the privacy policy.
-
-= Does the tracking tag fingerprint my visitors? =
-
-It collects a canvas hash and the WebGL renderer name to distinguish real browsers from bots, and those signals can act as a device fingerprint. They are skipped for visitors whose browser sends Do Not Track. See External services for the full list, and turn the tag off if you do not want this.
-
 = Do I need a paid RankSage account? =
 
-No. A free RankSage account is enough to connect and see AI-crawler data.
+No. A free RankSage account is enough to connect and see which AI crawlers read your pages.
+
+= Will this slow down my site? =
+
+No. On an ordinary page request the plugin does one user-agent check and returns; there is no database query and no network call. Only a request from a known AI crawler writes a single row, and that write happens after the page has already been sent to the visitor. Delivery to RankSage runs on a schedule, never during a page load.
 
 = Does it track my human visitors? =
 
-The AI-crawler capture feature records **only** requests from known AI crawler user-agents. It never records a human visitor. The separate tracking tag is standard RankSage analytics and is governed by your RankSage account settings — turn it off in the plugin settings if you only want AI-crawler data.
+AI-crawler capture records **only** requests from known AI crawler user-agents and never records a human visitor. The optional tracking tag is standard RankSage visitor analytics; switch it off under Settings → RankSage if you want crawler data only. The full list of what the tag collects is in the Description under "Privacy and what is sent".
 
-= What happens if I deactivate or delete the plugin? =
+= Does the tracking tag fingerprint my visitors? =
 
-Deactivating stops all sending and removes the scheduled jobs. Deleting the plugin removes its options, the per-user notice setting and its buffer table completely.
+It collects a canvas hash and the graphics renderer name to tell real browsers from bots, and those signals can act as a device fingerprint. They are skipped for visitors whose browser sends Do Not Track. Turn the tag off if you do not want this, or load it only after consent where your visitors' jurisdiction requires it.
+
+= What data does the plugin send, and how do I stop it? =
+
+Nothing at all until you connect. Afterwards: AI-crawler visits (crawler user-agent, path and timestamp, never human visitors), a daily configuration request, and, while the tracking tag is on, the visitor analytics described in the Description, sent by your visitors' browsers. To stop only visitor analytics, untick the tracking tag. To stop everything, click **Disconnect from RankSage**: the tag is removed, scheduled sends are cancelled and the stored keys are deleted from your site immediately. To delete data RankSage already holds, remove the site in your RankSage dashboard or contact RankSage as described in the privacy policy.
+
+= Does it work with Yoast SEO, Rank Math or All in One SEO? =
+
+Yes. RankSage Connect does not touch your content or SEO settings. It measures AI-crawler visits and feeds RankSage; it runs alongside any SEO plugin.
 
 = Why does it say my AI-crawler coverage is degraded? =
 
-Either a full-page cache was detected — it serves pages without running PHP, so the plugin cannot observe those requests, and the settings screen lists the exact exclusion steps for it — or a delivery to RankSage failed, or buffered hits had to be dropped because RankSage stayed unreachable long enough for the local buffer to hit its 5,000-row cap. The settings screen names which one it is.
+Either a full-page cache was detected (it serves pages without running PHP, so the plugin cannot see those requests, and the settings screen lists the exclusion steps for your cache), or a delivery to RankSage failed, or buffered hits had to be dropped because RankSage stayed unreachable long enough for the local buffer to reach its 5,000-row cap. The settings screen names which one it is.
 
 = Does the buffer grow forever if RankSage is unreachable? =
 
-No. The buffer is capped at 5,000 rows, and the cap is applied on every flush attempt, including while the plugin is backing off from a failed delivery. Beyond the cap the oldest hits are dropped, the count of dropped hits is shown in the settings screen, and the delivery error that caused it is shown next to it rather than being overwritten.
+No. It is capped at 5,000 rows, the cap applies on every delivery attempt, the oldest hits are dropped beyond it, and the settings screen shows how many were dropped and why.
+
+= What happens if I deactivate or delete the plugin? =
+
+Deactivating stops all sending and removes the scheduled jobs. Deleting removes its options, the per-user notice setting and its buffer table completely.
 
 == Screenshots ==
 
@@ -144,6 +160,9 @@ No. The buffer is capped at 5,000 rows, and the cap is applied on every flush at
 4. The two independent toggles (tracking tag, AI-crawler capture) and Disconnect.
 
 == Changelog ==
+
+= 1.2.2 =
+* Directory listing rewritten: what the plugin does for you first, the full data disclosure kept under "Privacy and what is sent". No code change, no reconnect needed.
 
 = 1.2.1 =
 * "Tested up to" is now declared only in readme.txt, as the directory expects; the plugin header no longer repeats it. No functional change.
@@ -165,6 +184,9 @@ No. The buffer is capped at 5,000 rows, and the cap is applied on every flush at
 * Initial release: RankSage tracking tag injection, AI-crawler capture with buffered batch delivery, page-cache detection with per-cache fix instructions, and the `ranksage/v1` status/connect/disconnect REST namespace.
 
 == Upgrade Notice ==
+
+= 1.2.2 =
+Listing text only. No functional change, no reconnect needed.
 
 = 1.2.1 =
 Housekeeping release for the directory listing. No functional change, no reconnect needed.

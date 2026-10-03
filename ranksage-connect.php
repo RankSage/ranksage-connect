@@ -3,7 +3,7 @@
  * Plugin Name:       RankSage Connect
  * Plugin URI:        https://www.ranksage.com/integrations/wordpress
  * Description:       Connects your site to RankSage: adds the RankSage tracking tag and reports AI-crawler visits (GPTBot, ClaudeBot, PerplexityBot and friends) to your RankSage account. Nothing is sent until you connect an account.
- * Version:           1.2.1
+ * Version:           1.2.2
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            RankSage
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RANKSAGE_CONNECT_VERSION', '1.2.1' );
+define( 'RANKSAGE_CONNECT_VERSION', '1.2.2' );
 define( 'RANKSAGE_CONNECT_FILE', __FILE__ );
 define( 'RANKSAGE_CONNECT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RANKSAGE_CONNECT_URL', plugin_dir_url( __FILE__ ) );
