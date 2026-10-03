@@ -1,0 +1,82 @@
+# WHAT: Publish a tagged release of RankSage Connect to the WordPress.org plugin directory (SVN).
+# HOW:  Runs on a pushed `vX.Y.Z` tag (or by hand for an existing tag), checks the three version
+#       fields agree with the tag, builds the zip with build-zip.sh as a gate, then hands the tree
+#       to 10up's deploy action, which syncs trunk/ (minus .distignore), copies .wordpress-org/ to
+#       assets/, creates tags/X.Y.Z and commits with the SVN credentials from repository secrets.
+# WHY:  A release is "push a tag + one approval": no SVN password on any laptop, no manual svn.
+# NOTE: The job targets the `wordpress-org` environment, which requires a reviewer's approval
+#       before the secrets are released to it, and only runs for `v*` tags. Secrets are never
+#       echoed; the action redacts them. The action is pinned to a commit, not a floating tag.
+name: Deploy to WordPress.org
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to publish (e.g. v1.2.1)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Prepare everything but do not commit to SVN'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wordpress-org-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Publish ${{ inputs.tag || github.ref_name }} to WordPress.org
+    runs-on: ubuntu-latest
+    environment: wordpress-org
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ff7f7b6e4e1b # v4.3.1
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: Resolve the version from the tag
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag || github.ref_name }}"
+          case "$TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::Tag '$TAG' is not vX.Y.Z"; exit 1 ;;
+          esac
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Gate — the three version fields must equal the tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="${{ steps.version.outputs.version }}"
+          HEADER="$(grep -m1 -E '^\s*\*\s*Version:' ranksage-connect.php | sed -E 's/.*Version:[[:space:]]*//; s/[[:space:]]*$//')"
+          CONST="$(grep -m1 "define( 'RANKSAGE_CONNECT_VERSION'" ranksage-connect.php | sed -E "s/.*'([0-9.]+)'.*/\1/")"
+          STABLE="$(grep -m1 -E '^Stable tag:' readme.txt | sed -E 's/^Stable tag:[[:space:]]*//; s/[[:space:]]*$//')"
+          echo "tag=$EXPECTED header=$HEADER const=$CONST stable=$STABLE"
+          [ "$HEADER" = "$EXPECTED" ] && [ "$CONST" = "$EXPECTED" ] && [ "$STABLE" = "$EXPECTED" ] \
+            || { echo "::error::Version fields do not match the tag"; exit 1; }
+          # The build script applies the same checks and a PHP lint; it refuses on any mismatch.
+          ./build-zip.sh > /dev/null
+          echo "zip ok: $(unzip -l dist/ranksage-connect.zip | tail -1)"
+
+      - name: Deploy to WordPress.org SVN
+        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # v2.3.0
+        with:
+          dry-run: ${{ inputs.dry_run || false }}
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: ranksage-connect
+          VERSION: ${{ steps.version.outputs.version }}
+          ASSETS_DIR: .wordpress-org
