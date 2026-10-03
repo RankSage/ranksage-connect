@@ -6,7 +6,13 @@ Publishing is a pipeline, not a laptop task. `.github/workflows/deploy-wordpress
 `vX.Y.Z` tag is pushed (or by hand for an existing tag), checks that `Version:`, `RANKSAGE_CONNECT_VERSION`
 and `Stable tag` all equal the tag, builds the zip with `build-zip.sh` as a gate, and hands the tree to
 `10up/action-wordpress-plugin-deploy` (pinned to a commit), which syncs `trunk/` minus `.distignore`,
-copies `.wordpress-org/` to SVN `assets/`, creates `tags/X.Y.Z` and commits.
+copies `.wordpress-org/` (when it exists) to SVN `assets/`, creates `tags/X.Y.Z` and commits.
+
+Directory assets go in `.wordpress-org/` at the repo root — create the folder only when the images exist, because
+everything in it is published to SVN `assets/`. Filenames per the WordPress.org spec, all lowercase: `icon-128x128.png`,
+`icon-256x256.png` (optionally `icon.svg` plus the PNG fallback), `banner-772x250.png`, `banner-1544x500.png`,
+`screenshot-1.png` … `screenshot-4.png` numbered to match `== Screenshots ==` in `readme.txt`. Limits: icon 1 MB, banner
+4 MB, screenshot 10 MB. The directory can take up to ~6 hours to show changed images.
 
 Credentials: repository secrets `SVN_USERNAME` and `SVN_PASSWORD` (the WordPress.org **SVN password**,
 generated at profiles.wordpress.org → Account & Security → SVN password; never the login password). They
