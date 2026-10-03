@@ -1,18 +1,19 @@
 # WHAT: Publish a tagged release of RankSage Connect to the WordPress.org plugin directory (SVN).
-# HOW:  Runs on a pushed `vX.Y.Z` tag (or by hand for an existing tag), checks the three version
+# HOW:  Runs when a GitHub Release is PUBLISHED (its tag `vX.Y.Z` is the version) or by hand for an
+#       existing tag, checks the three version
 #       fields agree with the tag, builds the zip with build-zip.sh as a gate, then hands the tree
 #       to 10up's deploy action, which syncs trunk/ (minus .distignore), copies .wordpress-org/ to
 #       assets/, creates tags/X.Y.Z and commits with the SVN credentials from repository secrets.
-# WHY:  A release is "push a tag + one approval": no SVN password on any laptop, no manual svn.
+# WHY:  A release is "publish the GitHub Release + one approval": no SVN password on any laptop, no
+#       manual svn. Merging to main alone publishes nothing — the Release is the deliberate act.
 # NOTE: The job targets the `wordpress-org` environment, which requires a reviewer's approval
 #       before the secrets are released to it, and only runs for `v*` tags. Secrets are never
 #       echoed; the action redacts them. The action is pinned to a commit, not a floating tag.
 name: Deploy to WordPress.org
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -34,21 +35,21 @@ concurrency:
 
 jobs:
   deploy:
-    name: Publish ${{ inputs.tag || github.ref_name }} to WordPress.org
+    name: Publish ${{ inputs.tag || github.event.release.tag_name }} to WordPress.org
     runs-on: ubuntu-latest
     environment: wordpress-org
     steps:
       - name: Check out the release tag
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: ${{ inputs.tag || github.ref_name }}
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
 
       - name: Resolve the version from the tag
         id: version
         shell: bash
         run: |
           set -euo pipefail
-          TAG="${{ inputs.tag || github.ref_name }}"
+          TAG="${{ inputs.tag || github.event.release.tag_name }}"
           case "$TAG" in
             v[0-9]*.[0-9]*.[0-9]*) ;;
             *) echo "::error::Tag '$TAG' is not vX.Y.Z"; exit 1 ;;
