@@ -1,0 +1,44 @@
+# WHAT: Push directory assets (icon, banner, screenshots) and readme.txt changes to WordPress.org
+#       without a version release.
+# HOW:  On a push to main that touches .wordpress-org/** or readme.txt, 10up's asset-update action
+#       syncs `assets/` and the readme in `trunk/` and in the Stable-tag folder, and commits with the
+#       SVN secrets. It refuses when anything other than assets/readme differs from what is on SVN,
+#       so a code change can never slip out through this path (that needs a Release).
+# WHY:  The directory page reads icon/banner/screenshots from SVN `assets/`; the first publish had
+#       none and showed the grey placeholder.
+# NOTE: Same `wordpress-org` environment as the deploy: a required reviewer approves before the
+#       secrets are released. Action pinned to a commit.
+name: Update WordPress.org assets and readme
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.wordpress-org/**'
+      - 'readme.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wordpress-org-deploy
+  cancel-in-progress: false
+
+jobs:
+  assets:
+    name: Sync assets and readme to WordPress.org
+    runs-on: ubuntu-latest
+    environment: wordpress-org
+    steps:
+      - name: Check out main
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Sync to WordPress.org SVN
+        uses: 10up/action-wordpress-plugin-asset-update@2480306f6f693672726d08b5917ea114cb2825f7 # v2.2.0
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: ranksage-connect
+          ASSETS_DIR: .wordpress-org
+          IGNORE_OTHER_FILES: true
