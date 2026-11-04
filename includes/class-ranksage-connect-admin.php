@@ -105,7 +105,7 @@ class RankSage_Connect_Admin {
 			return;
 		}
 
-		// --- Direction B return leg: RankSage sent us a single-use code. -----------
+		// --- Return leg: RankSage sent us a single-use code. -----------
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- the nonce IS the value verified three lines down.
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
@@ -453,7 +453,7 @@ class RankSage_Connect_Admin {
 	}
 
 	/**
-	 * WHAT: The "Connect to RankSage" call to action (Direction B, outbound leg).
+	 * WHAT: The "Connect to RankSage" call to action ( outbound leg).
 	 * HOW:  Links to the RankSage app with this site's URL, a WordPress nonce and the
 	 *       admin return URL. RankSage signs the user in, binds the site to their
 	 *       verified domain, and redirects back with a single-use code.

@@ -17,10 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *       shipped rows on 2xx, otherwise retain and back off.
  * WHY:  One batched request every five minutes is invisible to a host's performance
  *       audit; a request-path call per crawler hit is not.
- * NOTE: The payload matches the RankSage edge-snippet contract exactly —
- *       header X-Ranksage-Key, body {hits:[{path,userAgent,timestamp}]} — because
- *       the server re-classifies and folds every hit through one code path regardless
- *       of which forwarder sent it.
+ * NOTE: The payload is header X-Ranksage-Key, body {hits:[{path,userAgent,timestamp}]}.
  */
 class RankSage_Connect_Flusher {
 
@@ -32,12 +29,8 @@ class RankSage_Connect_Flusher {
 
 	/**
 	 * WHAT: Hard ceiling on how many rows one POST may carry, regardless of config.
-	 * WHY:  RankSage folds a batch into at most 200 distinct (date, path, bot) groups and
-	 *       still answers 204. Remote config may raise flush_batch_size as far as 500, and
-	 *       the plugin DELETEs the whole batch on any 2xx — so a 500-row batch could delete
-	 *       rows the server silently dropped past its fold cap. Clamping here keeps the
-	 *       plugin inside the contract it can actually verify. Raising this constant
-	 *       requires the server-side cap to move first.
+	 * WHY:  The plugin deletes the whole batch on any 2xx, so one POST must stay within
+	 *       what RankSage accepts in a batch, whatever remote config asks for.
 	 */
 	const MAX_BATCH_SIZE = 200;
 

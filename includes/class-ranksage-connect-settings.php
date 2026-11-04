@@ -16,8 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *       customer's site?" has exactly one answer — and uninstall.php has exactly two
  *       option names to delete.
  * NOTE: The stored public tracking key is the SAME public key already visible in the
- *       page source of any RankSage-tracked site. No RankSage secret is ever written
- *       to a customer filesystem or database.
+ *       page source of any RankSage-tracked site. The account's secret key is never
+ *       stored here. The site token is a per-site credential held in this option.
  */
 class RankSage_Connect_Settings {
 
@@ -78,7 +78,7 @@ class RankSage_Connect_Settings {
 	/**
 	 * WHAT: Stores a verified connect payload.
 	 * WHY:  Called from exactly two places — the REST /connect route (Direction A) and
-	 *       the admin code exchange (Direction B) — both AFTER Ed25519 verification.
+	 *       the admin code exchange — both AFTER Ed25519 verification.
 	 *
 	 * @param string $public_key    RankSage public tracking key (rs_live_* / rs_staging_*).
 	 * @param string $site_token    Opaque per-site token used for config pulls.

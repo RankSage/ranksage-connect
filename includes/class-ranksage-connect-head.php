@@ -84,12 +84,8 @@ class RankSage_Connect_Head {
 	 * WHY:  rs.js ignores `data-public-key` and reads these globals instead. Its ingest
 	 *       default is same-origin `/e`, which on a WordPress site is a 404 — so without
 	 *       __RS_INGEST_URL__ every batch would be lost even once a session exists.
-	 * NOTE: rs.js ALSO requires `__RS_SESSION_ID__`, `__RS_TOKEN__` and `__RS_AES_KEY__`,
-	 *       which RankSage mints only from POST /session/init authenticated with the
-	 *       account's SECRET key. This plugin deliberately never stores that secret, so
-	 *       until RankSage can open a session from the public key alone, rs.js loads and
-	 *       then stays idle. Everything this tag needs for that server-side change is
-	 *       already emitted here, so no plugin release is required when it lands.
+	 * NOTE: rs.js opens its own session with the public key, so this plugin never needs
+	 *       the account's secret key.
 	 *
 	 * @param string $public_key The site's public tracking key.
 	 * @return string JavaScript.

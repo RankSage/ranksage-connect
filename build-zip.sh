@@ -23,9 +23,11 @@ STAGE="${OUT}/${SLUG}"
 # The public half of the compromised dev keypair. If this is still compiled in,
 # the private half in circulation can forge configuration the plugin trusts.
 BURNED_KEY="a0db4eea7070119db142c7814ed47cf8375417fd0d20ed80267ba239e769e955"
+# The key used up to 1.2.2, retired on 4 Nov 2026.
+RETIRED_KEY="11fae31ec5b3ac7c79b664da8288c1882a0f51f4c777453437a7d941d47ccb08"
 
-if grep -q "${BURNED_KEY}" "${HERE}/${SLUG}.php"; then
-  echo "REFUSING TO BUILD — the development signing key is still compiled in." >&2
+if grep -q -e "${BURNED_KEY}" -e "${RETIRED_KEY}" "${HERE}/${SLUG}.php"; then
+  echo "REFUSING TO BUILD — a retired signing key is still compiled in." >&2
   echo "" >&2
   echo "  That key's PRIVATE half was exposed in a session transcript. It is the" >&2
   echo "  trust anchor verify_payload() checks backend configuration against, so" >&2

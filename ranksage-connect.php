@@ -3,7 +3,7 @@
  * Plugin Name:       RankSage Connect
  * Plugin URI:        https://www.ranksage.com/integrations/wordpress
  * Description:       Connects your site to RankSage: adds the RankSage tracking tag and reports AI-crawler visits (GPTBot, ClaudeBot, PerplexityBot and friends) to your RankSage account. Nothing is sent until you connect an account.
- * Version:           1.2.2
+ * Version:           1.2.3
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            RankSage
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RANKSAGE_CONNECT_VERSION', '1.2.2' );
+define( 'RANKSAGE_CONNECT_VERSION', '1.2.3' );
 define( 'RANKSAGE_CONNECT_FILE', __FILE__ );
 define( 'RANKSAGE_CONNECT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RANKSAGE_CONNECT_URL', plugin_dir_url( __FILE__ ) );
@@ -66,7 +66,7 @@ if ( ! defined( 'RANKSAGE_CONNECT_SITE_BASE' ) ) {
  *       site's tracking at somebody else's RankSage account.
  * NOTE: A public key is not a secret; publishing it is the point.
  */
-define( 'RANKSAGE_CONNECT_SIGNING_PUBLIC_KEY', '11fae31ec5b3ac7c79b664da8288c1882a0f51f4c777453437a7d941d47ccb08' );
+define( 'RANKSAGE_CONNECT_SIGNING_PUBLIC_KEY', '0cc12926fa998edea49b4824d8a0a2e65064c499b0270f4ad459af53b595ec8a' );
 
 /** Option holding the connection + user toggles. */
 define( 'RANKSAGE_CONNECT_OPTION', 'ranksage_connect_settings' );
