@@ -4,7 +4,7 @@ Tags: seo, ai search, content optimization, site analytics, ai crawlers
 Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -50,7 +50,7 @@ Full-page caches serve pages without running PHP, and no plugin can see those re
 
 = Privacy and what is sent =
 
-We would rather over-explain than surprise you. The plugin contacts no server until you connect. After you connect it talks only to RankSage, the crawler feature never records a human visitor, and no RankSage secret is stored on your site. The complete disclosure of every request, what it contains and when it happens follows. It is long on purpose.
+We would rather over-explain than surprise you. The plugin contacts no server until you connect. After you connect it talks only to RankSage, the crawler feature never records a human visitor, and your RankSage account password and secret key are never stored on your site. The complete disclosure of every request, what it contains and when it happens follows. It is long on purpose.
 
 
 This plugin connects your site to **RankSage**, an external SaaS product operated by RankSage. It needs a RankSage account to do anything.
@@ -99,7 +99,7 @@ The plugin makes no IndexNow request itself. It answers `GET /<your-key>.txt` on
 
 = What is stored on your site =
 
-Your RankSage *public* tracking key (the same key visible in your page source), the site token, your IndexNow key, your two toggle preferences, the local AI-crawler buffer table, and, per administrator, whether they dismissed the page-cache notice. No RankSage secret or password is ever written to your site. Deleting the plugin removes all of it.
+Your RankSage *public* tracking key (the same key visible in your page source), the site token, your IndexNow key, your two toggle preferences, the local AI-crawler buffer table, and, per administrator, whether they dismissed the page-cache notice. The site token is a per-site credential; your RankSage account password and secret key are never written to your site. Deleting the plugin removes all of it.
 
 = Security design =
 
@@ -167,6 +167,9 @@ Deactivating stops all sending and removes the scheduled jobs. Deleting removes 
 
 The full history lives in the repository: https://github.com/RankSage/ranksage-connect/blob/main/CHANGELOG.md
 
+= 1.2.3 =
+* Security update: RankSage rotated the key that signs this plugin's configuration. Update so your site keeps receiving signed settings.
+
 = 1.2.2 =
 * Directory listing rewritten around what RankSage does for a site owner. The complete data disclosure is kept under "Privacy and what is sent". No code change, no reconnect needed.
 
@@ -174,6 +177,9 @@ The full history lives in the repository: https://github.com/RankSage/ranksage-c
 * "Tested up to" is now declared only in readme.txt, as the directory expects. No functional change.
 
 == Upgrade Notice ==
+
+= 1.2.3 =
+Security update. RankSage rotated its signing key, so please update. No reconnect needed.
 
 = 1.2.2 =
 Listing text only. No functional change, no reconnect needed.

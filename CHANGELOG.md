@@ -3,6 +3,10 @@
 All notable changes to RankSage Connect. The WordPress.org listing shows only the latest entries and links here.
 Versions follow the plugin header, `RANKSAGE_CONNECT_VERSION` and `Stable tag` in `readme.txt`; each one is a git tag `vX.Y.Z` and an SVN tag.
 
+## 1.2.3
+
+* Security update: RankSage rotated the key that signs this plugin's configuration. The new public key ships in this release. An older version keeps its last good settings but cannot complete a new connection, so update first. Existing connections need no reconnect.
+
 ## 1.2.2
 
 * Directory listing rewritten around what RankSage does for a site owner. The complete data disclosure is kept under "Privacy and what is sent". Changelog history moved to this file. No code change, no reconnect needed.

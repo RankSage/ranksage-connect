@@ -17,8 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *       WITHOUT booting PHP. The advanced-cache.php drop-in loads before mu-plugins and
  *       before plugins and exits, so NO plugin hook can observe a cache hit. On a
  *       well-cached site this plugin therefore sees roughly the first hit per URL per
- *       cache TTL. Competing AI-crawler plugins ship this undercount silently; we
- *       refuse to. Detection feeds a loud "degraded" state in wp-admin and in the
+ *       cache TTL. Detection feeds a loud "degraded" state in wp-admin and in the
  *       RankSage dashboard, with per-cache exclusion instructions.
  */
 class RankSage_Connect_Cache_Detect {
@@ -83,7 +82,7 @@ class RankSage_Connect_Cache_Detect {
 	/**
 	 * WHAT: The honest coverage message shown in wp-admin when a cache is detected.
 	 * WHY:  "Zero setup AI-crawler tracking" that silently undercounts is worse than
-	 *       no tracking. Naming the cache and the fix is the whole differentiator.
+	 *       no tracking, so the message names the cache and the fix.
 	 *
 	 * @param string $summary Output of self::summary().
 	 * @return string Escaped-safe plain text (caller escapes).

@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class RankSage_Connect_Capture {
 
-	/** Longest path/user-agent we store; matches the RankSage ingest caps. */
+	/** Longest path/user-agent we store. */
 	const MAX_FIELD_LENGTH = 512;
 
 	/**

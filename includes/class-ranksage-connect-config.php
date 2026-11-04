@@ -121,8 +121,7 @@ class RankSage_Connect_Config {
 	 * WHY:  A transient with an expiry is stored non-autoloaded, which would add a DB
 	 *       query to every pageview — unacceptable for code that runs at init priority 1.
 	 *       This is the same "cached for 24h, falls back to compiled defaults" contract,
-	 *       moved off the request path. Deviation from the research's literal "transient"
-	 *       wording, for the performance reason the same research section demands.
+	 *       moved off the request path.
 	 *
 	 * @return array
 	 */
@@ -192,9 +191,7 @@ class RankSage_Connect_Config {
 
 	/**
 	 * WHAT: The compiled-in configuration, used before first contact and on any failure.
-	 * NOTE: ua_tokens mirrors the RankSage edge-snippet prefilter. It only has to avoid
-	 *       forwarding obvious non-bots — RankSage re-classifies every user-agent against
-	 *       the canonical registry server-side and drops anything unrecognised.
+	 * NOTE: ua_tokens only has to avoid forwarding obvious non-bots.
 	 *
 	 * @return array
 	 */
@@ -241,11 +238,8 @@ class RankSage_Connect_Config {
 
 		/**
 		 * WHAT: Identify the site on the config pull with the token issued at connect.
-		 * WHY:  The token was stored and advertised in the readme but read nowhere — dead
-		 *       state on a customer's site, which is exactly what a wordpress.org reviewer
-		 *       flags. Sending it makes the stored value purposeful: it lets RankSage scope
-		 *       the config (including the capture kill switch) to one site rather than
-		 *       serving one global document to every install.
+		 * WHY:  It lets RankSage scope the config (including the capture switch) to one
+		 *       site rather than serving one document to every install.
 		 * NOTE: Optional by design. The endpoint stays usable without it, and a missing
 		 *       token simply omits the header — the response is Ed25519-verified either
 		 *       way, so the token is never what establishes trust.
