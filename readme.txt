@@ -2,7 +2,7 @@
 Contributors: ranksage
 Tags: seo, ai search, content optimization, site analytics, ai crawlers
 Requires at least: 6.3
-Tested up to: 7.1
+Tested up to: 7.2
 Requires PHP: 7.4
 Stable tag: 1.2.3
 License: GPLv2 or later
